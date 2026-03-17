@@ -24,7 +24,7 @@ jobs:
         run: uv sync --extra dev
 
       - name: Security audit
-        run: uv pip audit
+        run: uvx pip-audit
 
       - name: Format check
         run: uv run ruff format --check src/ tests/
