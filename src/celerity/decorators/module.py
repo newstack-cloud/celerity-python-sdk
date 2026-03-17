@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from celerity.metadata.keys import MODULE, set_metadata
 from celerity.types.module import ModuleMetadata
@@ -23,6 +23,7 @@ def module(
     providers: list[type | Provider] | None = None,
     imports: list[type] | None = None,
     exports: list[InjectionToken] | None = None,
+    layers: list[Any] | None = None,
 ) -> Callable[[type], type]:
     """Declare a module -- the organisational unit for grouping
     controllers, providers, and sub-modules.
@@ -38,6 +39,8 @@ def module(
         providers: Provider classes or provider dicts.
         imports: Other modules to import.
         exports: Tokens to export for importing modules.
+        layers: Application-level layers applied to all handlers
+            in this module.
 
     Returns:
         A class decorator that attaches module metadata.
@@ -49,17 +52,9 @@ def module(
             providers=[OrderService, PaymentService],
             imports=[DatabaseModule],
             exports=[OrderService],
+            layers=[LoggingLayer, MetricsLayer],
         )
         class OrderModule:
-            pass
-
-        @module(
-            function_handlers=[
-                {"handler": process_event, "trigger": "consumer"},
-            ],
-            guards=[JwtGuard],
-        )
-        class EventModule:
             pass
     """
 
@@ -71,6 +66,7 @@ def module(
             providers=providers,
             imports=imports,
             exports=exports,
+            layers=layers,
         )
         set_metadata(cls, MODULE, metadata)
         return cls

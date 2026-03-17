@@ -41,3 +41,4 @@ class ModuleMetadata:
     providers: list[type | Provider] | None = None
     imports: list[type] | None = None
     exports: list[InjectionToken] | None = None
+    layers: list[Any] | None = None
