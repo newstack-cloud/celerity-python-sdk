@@ -43,6 +43,7 @@ uv.lock
 coverage.xml
 test-results.xml
 htmlcov/
+.coverage
 
 # Node (commitlint dev tooling)
 node_modules/

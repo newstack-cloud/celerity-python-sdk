@@ -40,7 +40,7 @@ COVERAGE_ARGS=(
 
 cleanup() {
   echo "Stopping services..."
-  docker compose down -v 2>/dev/null || true
+  docker compose down -v || true
 }
 
 run_unit() {
