@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -e
+
+RED='\033[0;31m'
+NC='\033[0m'
+
+# Use commitlint if available (installed via yarn)
+if command -v npx &> /dev/null && [ -f "node_modules/.bin/commitlint" ]; then
+    npx --no-install commitlint --edit "$1"
+    exit $?
+fi
+
+# Fallback to regex validation if commitlint is not installed
+PATTERN='^(feat|fix|build|revert|wip|chore|ci|docs|style|refactor|perf|test|instr|deps)(\([a-zA-Z0-9_-]+\))?!?: .+'
+
+COMMIT_MSG=$(cat "$1")
+
+# Allow merge commits
+if echo "$COMMIT_MSG" | grep -qE '^Merge '; then
+    exit 0
+fi
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+    echo -e "${RED}Invalid commit message format.${NC}"
+    echo ""
+    echo "Expected: type(scope): description"
+    echo "Types: feat, fix, build, revert, wip, chore, ci, docs, style, refactor, perf, test, instr, deps"
+    echo ""
+    echo "Examples:"
+    echo "  feat: add handler pipeline"
+    echo "  fix(di): resolve circular dependency detection"
+    echo "  chore: update dependencies"
+    echo ""
+    exit 1
+fi

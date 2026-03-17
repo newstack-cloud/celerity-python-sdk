@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -e
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+echo "Running pre-commit checks..."
+
+# Check if any Python files are staged
+STAGED_PY=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.py$' || true)
+if [ -z "$STAGED_PY" ]; then
+    echo -e "${GREEN}No Python files staged, skipping checks.${NC}"
+    exit 0
+fi
+
+echo "Checking formatting..."
+if ! uv run ruff format --check src/ tests/ 2>/dev/null; then
+    echo -e "${RED}Formatting check failed. Run 'uv run ruff format src/ tests/' to fix.${NC}"
+    exit 1
+fi
+
+echo "Checking lint..."
+if ! uv run ruff check src/ tests/ 2>/dev/null; then
+    echo -e "${RED}Lint check failed. Run 'uv run ruff check --fix src/ tests/' to fix.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}Pre-commit checks passed.${NC}"

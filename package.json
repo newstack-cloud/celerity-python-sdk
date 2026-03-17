@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "description": "Dev tooling only — commitlint for conventional commit enforcement",
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0"
+  }
+}

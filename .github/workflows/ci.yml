@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Format check
+        run: uv run ruff format --check src/ tests/
+
+      - name: Lint
+        run: uv run ruff check src/ tests/
+
+      - name: Generate Ruff report for SonarCloud
+        run: uv run ruff check src/ tests/ --output-format json > ruff-report.json || true
+
+      - name: Type check
+        run: uv run mypy src/
+
+      - name: Run all tests with coverage
+        run: ./scripts/run-tests.sh all
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

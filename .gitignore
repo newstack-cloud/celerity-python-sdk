@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Tool caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Environment files
+.env
+.env.local
+
+# Native extensions
+*.so
+*.dylib
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# uv
+uv.lock
+
+# Test reports
+coverage.xml
+test-results.xml
+htmlcov/
+
+# Node (commitlint dev tooling)
+node_modules/
+yarn-error.log
+
+CLAUDE.md
+.claude
