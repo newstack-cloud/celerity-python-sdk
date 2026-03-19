@@ -92,10 +92,7 @@ def build_module_graph(root_module: type) -> ModuleGraph:
 
         own_tokens: set[Any] = set()
         for provider in metadata.providers or []:
-            if isinstance(provider, type):
-                own_tokens.add(provider)
-            else:
-                own_tokens.add(provider)
+            own_tokens.add(provider)
 
         for ctrl in metadata.controllers or []:
             own_tokens.add(ctrl)

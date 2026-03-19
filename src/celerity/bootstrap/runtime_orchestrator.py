@@ -54,13 +54,13 @@ async def start_runtime(*, block: bool = True) -> None:
 
     result = await bootstrap_for_runtime()
 
-    await _register_http_handlers(app, app_config, result)
-    await _register_guard_handlers(app, app_config, result)
-    await _register_websocket_handlers(app, app_config, result)
-    await _register_consumer_handlers(app, app_config, result)
-    await _register_event_handlers(app, app_config, result)
-    await _register_schedule_handlers(app, app_config, result)
-    await _register_custom_handlers(app, app_config, result)
+    _register_http_handlers(app, app_config, result)
+    _register_guard_handlers(app, app_config, result)
+    _register_websocket_handlers(app, app_config, result)
+    _register_consumer_handlers(app, app_config, result)
+    _register_event_handlers(app, app_config, result)
+    _register_schedule_handlers(app, app_config, result)
+    _register_custom_handlers(app, app_config, result)
 
     if app_config.api and app_config.api.websocket:
         _register_websocket_sender(app, result)
@@ -74,7 +74,7 @@ async def start_runtime(*, block: bool = True) -> None:
 # ---------------------------------------------------------------------------
 
 
-async def _register_http_handlers(
+def _register_http_handlers(
     app: CoreRuntimeApplication,
     app_config: CoreRuntimeAppConfig,
     result: RuntimeBootstrapResult,
@@ -91,7 +91,7 @@ async def _register_http_handlers(
             logger.debug("registered http: %s %s", defn.method, defn.path)
 
 
-async def _register_guard_handlers(
+def _register_guard_handlers(
     app: CoreRuntimeApplication,
     app_config: CoreRuntimeAppConfig,
     result: RuntimeBootstrapResult,
@@ -106,7 +106,7 @@ async def _register_guard_handlers(
             logger.debug("registered guard: %s", defn.name)
 
 
-async def _register_websocket_handlers(
+def _register_websocket_handlers(
     app: CoreRuntimeApplication,
     app_config: CoreRuntimeAppConfig,
     result: RuntimeBootstrapResult,
@@ -121,7 +121,7 @@ async def _register_websocket_handlers(
             logger.debug("registered websocket: %s", defn.route)
 
 
-async def _register_consumer_handlers(
+def _register_consumer_handlers(
     app: CoreRuntimeApplication,
     app_config: CoreRuntimeAppConfig,
     result: RuntimeBootstrapResult,
@@ -139,7 +139,7 @@ async def _register_consumer_handlers(
                 logger.debug("registered consumer: %s", defn.name)
 
 
-async def _register_event_handlers(
+def _register_event_handlers(
     app: CoreRuntimeApplication,
     app_config: CoreRuntimeAppConfig,
     result: RuntimeBootstrapResult,
@@ -157,7 +157,7 @@ async def _register_event_handlers(
                 logger.debug("registered event consumer: %s", defn.name)
 
 
-async def _register_schedule_handlers(
+def _register_schedule_handlers(
     app: CoreRuntimeApplication,
     app_config: CoreRuntimeAppConfig,
     result: RuntimeBootstrapResult,
@@ -175,7 +175,7 @@ async def _register_schedule_handlers(
                 logger.debug("registered schedule: %s", defn.name)
 
 
-async def _register_custom_handlers(
+def _register_custom_handlers(
     app: CoreRuntimeApplication,
     app_config: CoreRuntimeAppConfig,
     result: RuntimeBootstrapResult,

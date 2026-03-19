@@ -7,6 +7,7 @@ from typing import Annotated, Any, get_args, get_origin, get_type_hints
 
 from celerity.decorators.injectable import _InjectMarker
 from celerity.metadata.keys import INJECT, get_metadata
+from celerity.resources._tokens import resolve_param_token
 
 
 def get_class_dependency_tokens(target: type) -> list[Any]:
@@ -16,7 +17,9 @@ def get_class_dependency_tokens(target: type) -> list[Any]:
 
     1. Class-level ``@inject({index: token})`` override.
     2. ``Annotated[Type, inject(token)]`` marker in the type hint.
-    3. The bare type hint itself.
+    3. ``__celerity_param__`` on the type hint (e.g. ``Config["appConfig"]``,
+       ``CacheResource["my-cache"]``) -- resolved to a DI token.
+    4. The bare type hint itself.
 
     Args:
         target: The class to inspect.
@@ -34,6 +37,14 @@ def get_class_dependency_tokens(target: type) -> list[Any]:
 
         tokens = get_class_dependency_tokens(OrderService)
         # [DatabaseClient, CacheClient]
+
+        @injectable()
+        class SettingsService:
+            def __init__(self, config: Config["appConfig"]) -> None:
+                ...
+
+        tokens = get_class_dependency_tokens(SettingsService)
+        # ["celerity:config:appConfig"]
     """
     init = target.__init__  # type: ignore[misc]
     if init is object.__init__:
@@ -69,6 +80,12 @@ def get_class_dependency_tokens(target: type) -> list[Any]:
                 tokens.append(inject_marker.token)
             else:
                 tokens.append(args[0])
+            continue
+
+        # Check for __celerity_param__ (Config["name"], CacheResource, etc.)
+        param_token = resolve_param_token(hint)
+        if param_token is not None:
+            tokens.append(param_token)
             continue
 
         tokens.append(hint)

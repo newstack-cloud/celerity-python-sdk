@@ -298,7 +298,7 @@ async def bootstrap_for_runtime(
     Returns:
         A ``RuntimeBootstrapResult`` ready for handler registration.
     """
-    layers = system_layers if system_layers is not None else await create_default_system_layers()
+    layers = system_layers if system_layers is not None else create_default_system_layers()
     root_module = discover_module(module_path)
     container, registry, _graph = await bootstrap(root_module)
 

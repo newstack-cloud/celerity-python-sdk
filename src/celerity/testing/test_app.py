@@ -71,7 +71,7 @@ class TestApp:
             A bootstrapped ``TestApp`` ready for injection.
         """
         container, registry, _graph = await bootstrap(root_module)
-        system_layers = await create_default_system_layers()
+        system_layers = create_default_system_layers()
 
         if overrides:
             for token, value in overrides.items():

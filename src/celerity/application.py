@@ -76,7 +76,7 @@ class CelerityFactory:
             await app.close()
         """
         container, registry, graph = await bootstrap(root_module)
-        system_layers = await create_default_system_layers()
+        system_layers = create_default_system_layers()
         logger.debug("create: %d system layers", len(system_layers))
         if layers:
             system_layers.extend(layers)

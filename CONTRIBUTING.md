@@ -15,8 +15,8 @@
 git clone git@github.com:newstack-cloud/celerity-python-sdk.git
 cd celerity-python-sdk
 
-# Install Python dependencies
-uv sync --extra dev
+# Install Python dependencies (all extras needed for development)
+uv sync --extra dev --extra runtime --extra aws --extra cache
 
 # Install commitlint (Node.js dev tooling)
 yarn install
@@ -70,7 +70,7 @@ uv add --dev pytest-mock
 # (edit pyproject.toml [project.optional-dependencies] directly)
 
 # Sync after editing pyproject.toml
-uv sync --extra dev
+uv sync --extra dev --extra runtime --extra aws --extra cache
 ```
 
 ## Conventional Commits
