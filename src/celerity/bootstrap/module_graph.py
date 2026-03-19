@@ -58,6 +58,7 @@ def build_module_graph(root_module: type) -> ModuleGraph:
 
         graph = build_module_graph(AppModule)
     """
+    logger.debug("build_module_graph: starting from %s", root_module.__name__)
     graph: ModuleGraph = {}
     resolving: set[type] = set()
 
@@ -76,6 +77,15 @@ def build_module_graph(root_module: type) -> ModuleGraph:
             resolving.discard(module_class)
             graph[module_class] = ModuleNode(module_class=module_class)
             return
+
+        logger.debug(
+            "walk %s: %d providers, %d controllers, %d guards, %d imports",
+            module_class.__name__,
+            len(metadata.providers or []),
+            len(metadata.controllers or []),
+            len(metadata.guards or []),
+            len(metadata.imports or []),
+        )
 
         for imported in metadata.imports or []:
             walk(imported, [*import_chain, module_class])
@@ -108,6 +118,7 @@ def build_module_graph(root_module: type) -> ModuleGraph:
         )
 
     walk(root_module, [])
+    logger.debug("build_module_graph: complete — %d modules", len(graph))
     return graph
 
 

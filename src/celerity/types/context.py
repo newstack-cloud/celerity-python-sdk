@@ -49,3 +49,33 @@ class ScheduleHandlerContext(BaseHandlerContext):
     """Context for schedule handler pipelines."""
 
     event: ScheduleEventInput | None = None
+
+
+@dataclass
+class GuardHandlerContext:
+    """Context passed to class-based guard ``check()`` methods.
+
+    Contains the auth token, accumulated auth from preceding guards,
+    request data, handler metadata, and DI container.
+    """
+
+    token: str
+    auth: dict[str, Any]
+    request: Any
+    metadata: HandlerMetadataStore
+    container: ServiceContainer
+    logger: Any | None = None
+
+
+@dataclass
+class GuardContext:
+    """Context passed to function-based guards (``create_guard()``).
+
+    Contains handler metadata, DI container, and accumulated auth
+    from preceding guards in the chain.
+    """
+
+    metadata: HandlerMetadataStore
+    container: ServiceContainer
+    auth: dict[str, Any] | None = None
+    logger: Any | None = None

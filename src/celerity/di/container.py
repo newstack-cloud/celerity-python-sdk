@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from celerity.di.dependency_tokens import get_class_dependency_tokens
 from celerity.metadata.keys import INJECTABLE, get_metadata
-from celerity.types.container import ClassProvider, FactoryProvider, ValueProvider
+from celerity.types.container import ClassProvider, FactoryProvider, ServiceContainer, ValueProvider
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -20,7 +20,7 @@ logger = logging.getLogger("celerity.di")
 _CLOSE_METHODS = ("close", "aclose", "end", "quit", "disconnect", "destroy")
 
 
-class Container:
+class Container(ServiceContainer):
     """Async DI container with singleton scope and lifecycle management.
 
     Resolves dependencies via:
@@ -61,6 +61,7 @@ class Container:
             provider: A ``ClassProvider``, ``FactoryProvider``, or
                 ``ValueProvider`` instance.
         """
+        logger.debug("register %s (%s)", _token_str(token), type(provider).__name__)
         self._providers[token] = provider
 
     def register_class(self, target: type) -> None:
@@ -70,6 +71,7 @@ class Container:
             target: The class to register. It will be constructed via
                 its ``__init__`` type hints when resolved.
         """
+        logger.debug("register %s (class)", target.__name__)
         self._providers[target] = ClassProvider(use_class=target)
 
     def register_value(self, token: Any, value: Any) -> None:
@@ -79,6 +81,7 @@ class Container:
             token: The DI token.
             value: The value to return when this token is resolved.
         """
+        logger.debug("register_value %s", _token_str(token))
         self._instances[token] = value
         self._track_closeable(token, value)
 
@@ -98,6 +101,7 @@ class Container:
                 provider is registered for the token.
         """
         if token in self._instances:
+            logger.debug("resolve %s → cached", _token_str(token))
             return self._instances[token]
 
         if token in self._resolving:
@@ -106,6 +110,7 @@ class Container:
             )
             raise RuntimeError(f"Circular dependency detected: {path}")
 
+        logger.debug("resolve %s → constructing", _token_str(token))
         self._resolving.add(token)
         try:
             provider = self._providers.get(token)
@@ -161,8 +166,10 @@ class Container:
         Exceptions from individual close calls are logged but do not
         prevent other resources from being closed.
         """
+        logger.debug("close_all: %d resources", len(self._close_stack))
         for token, close_fn in reversed(self._close_stack):
             try:
+                logger.debug("closing %s", _token_str(token))
                 result = close_fn()
                 if inspect.isawaitable(result):
                     await result
@@ -235,6 +242,9 @@ class Container:
             )
 
         dep_tokens = get_class_dependency_tokens(target)
+        logger.debug(
+            "construct %s deps=[%s]", target.__name__, ", ".join(_token_str(t) for t in dep_tokens)
+        )
         sig_params = [p for p in sig.parameters.values() if p.name != "self"]
 
         deps: list[Any] = []
