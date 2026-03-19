@@ -42,7 +42,13 @@ telemetry = [
     "opentelemetry-sdk-extension-aws>=2.0",
     "opentelemetry-propagator-aws-xray>=1.0",
 ]
-dev = ["celerity-sdk[test]", "ruff>=0.8", "mypy>=1.13", "pytest-cov>=6.0"]
+dev = [
+    "celerity-sdk[test,runtime,aws]",
+    "boto3-stubs>=1.34",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "pytest-cov>=6.0",
+]
 
 [project.scripts]
 celerity-extract = "celerity.cli.extract:main"
@@ -75,6 +81,7 @@ ignore_missing_imports = true
 module = ["celerity.telemetry.*"]
 ignore_missing_imports = true
 
+
 [tool.ruff]
 target-version = "py313"
 line-length = 100
@@ -93,9 +100,12 @@ select = [
     "UP",  # pyupgrade
     "B",   # flake8-bugbear
     "SIM", # flake8-simplify
-    "TCH", # flake8-type-checking
+    "TC",  # flake8-type-checking
     "RUF", # ruff-specific rules
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"src/celerity/bootstrap/runtime_mapper.py" = ["TC002", "I001"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["celerity"]

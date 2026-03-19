@@ -13,14 +13,14 @@ from celerity.types.consumer import EventResult
 from celerity.types.context import ScheduleHandlerContext
 
 if TYPE_CHECKING:
-    from celerity.types.handler import ResolvedScheduleHandler
+    from celerity.types.handler import ResolvedHandlerBase
     from celerity.types.schedule import ScheduleEventInput
 
 logger = logging.getLogger("celerity.pipeline.schedule")
 
 
 async def execute_schedule_pipeline(
-    handler: ResolvedScheduleHandler,
+    handler: ResolvedHandlerBase,
     event: ScheduleEventInput,
     options: dict[str, Any],
 ) -> EventResult:

@@ -14,13 +14,13 @@ from celerity.types.context import ConsumerHandlerContext
 
 if TYPE_CHECKING:
     from celerity.types.consumer import ConsumerEventInput
-    from celerity.types.handler import ResolvedConsumerHandler
+    from celerity.types.handler import ResolvedHandlerBase
 
 logger = logging.getLogger("celerity.pipeline.consumer")
 
 
 async def execute_consumer_pipeline(
-    handler: ResolvedConsumerHandler,
+    handler: ResolvedHandlerBase,
     event: ConsumerEventInput,
     options: dict[str, Any],
 ) -> EventResult:

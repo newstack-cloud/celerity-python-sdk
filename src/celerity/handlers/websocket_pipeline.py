@@ -12,14 +12,14 @@ from celerity.metadata.store import HandlerMetadataStore
 from celerity.types.context import WebSocketHandlerContext
 
 if TYPE_CHECKING:
-    from celerity.types.handler import ResolvedWebSocketHandler
+    from celerity.types.handler import ResolvedHandlerBase
     from celerity.types.websocket import WebSocketMessage
 
 logger = logging.getLogger("celerity.pipeline.ws")
 
 
 async def execute_websocket_pipeline(
-    handler: ResolvedWebSocketHandler,
+    handler: ResolvedHandlerBase,
     message: WebSocketMessage,
     options: dict[str, Any],
 ) -> None:
@@ -42,9 +42,7 @@ async def execute_websocket_pipeline(
     )
 
     all_layers = [*system_layers, *module_layers, *handler.layers]
-    logger.debug(
-        "route=%s event=%s — %d layers", message.event_type, handler.route, len(all_layers)
-    )
+    logger.debug("event=%s — %d layers", message.event_type, len(all_layers))
 
     async def core_handler() -> None:
         params = resolve_handler_params(handler, context)

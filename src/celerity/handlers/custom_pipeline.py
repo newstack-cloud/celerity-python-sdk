@@ -13,7 +13,7 @@ from celerity.metadata.store import HandlerMetadataStore
 from celerity.types.context import BaseHandlerContext
 
 if TYPE_CHECKING:
-    from celerity.types.handler import ResolvedCustomHandler
+    from celerity.types.handler import ResolvedHandlerBase
 
 logger = logging.getLogger("celerity.pipeline.custom")
 
@@ -26,7 +26,7 @@ class CustomHandlerContext(BaseHandlerContext):
 
 
 async def execute_custom_pipeline(
-    handler: ResolvedCustomHandler,
+    handler: ResolvedHandlerBase,
     payload: Any,
     options: dict[str, Any],
 ) -> Any:
@@ -52,7 +52,8 @@ async def execute_custom_pipeline(
     )
 
     all_layers = [*system_layers, *module_layers, *handler.layers]
-    logger.debug("name=%s — %d layers", handler.name, len(all_layers))
+    handler_name = options.get("handler_name", "unknown")
+    logger.debug("name=%s — %d layers", handler_name, len(all_layers))
 
     async def core_handler() -> Any:
         params = resolve_handler_params(handler, context)
