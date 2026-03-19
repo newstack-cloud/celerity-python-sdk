@@ -1,4 +1,4 @@
-"""DI token factories and resource layer token detection."""
+"""DI token factories and resource marker resolution."""
 
 from __future__ import annotations
 
@@ -28,8 +28,7 @@ def resource_token(resource_type: str, resource_name: str) -> str:
 def default_token(resource_type: str) -> str:
     """Create a default DI token for a resource type.
 
-    Used when exactly one resource of a type exists, enabling the
-    no-argument form of resource parameter decorators.
+    Used when exactly one resource of a type exists.
 
     Example::
 
@@ -38,32 +37,35 @@ def default_token(resource_type: str) -> str:
     return f"celerity:{resource_type}:default"
 
 
-def resolve_param_token(hint: Any) -> str | None:
-    """Resolve a DI token from a ``__celerity_param__`` type hint.
+def resolve_marker_token(marker: Any) -> str | None:
+    """Resolve a DI token from a resource marker instance.
 
-    If the hint has a ``__celerity_param__`` attribute with a ``type``
-    and optional ``key``, returns the corresponding DI token. This
-    enables parameter types like ``Config["appConfig"]`` and
-    ``CacheResource["my-cache"]`` to work in both handler parameters
-    AND constructor/factory injection.
+    Markers are objects with ``resource_type`` and optional
+    ``resource_name`` attributes, used inside ``Annotated[Type, Marker]``.
+
+    Examples::
+
+        resolve_marker_token(CacheParam())           -> "celerity:cache:default"
+        resolve_marker_token(CacheParam("session"))   -> "celerity:cache:session"
+        resolve_marker_token(ConfigParam("appConfig")) -> "celerity:config:appConfig"
 
     Returns:
-        The DI token string, or ``None`` if the hint is not a
-        param type or has no resolvable token.
+        The DI token string, or ``None`` if the object is not a
+        resource marker.
     """
-    meta = getattr(hint, "__celerity_param__", None)
-    if meta is None:
+    rt = getattr(marker, "resource_type", None)
+    if rt is None:
         return None
 
-    param_type: str = getattr(meta, "type", "")
-    key: str | None = getattr(meta, "key", None)
+    name = getattr(marker, "resource_name", None)
+    if name:
+        return resource_token(rt, name)
+    return default_token(rt)
 
-    if not param_type:
-        return None
 
-    if key:
-        return resource_token(param_type, key)
-    return default_token(param_type)
+def is_resource_marker(obj: Any) -> bool:
+    """Check if an object is a resource marker (has ``resource_type``)."""
+    return hasattr(obj, "resource_type")
 
 
 def is_resource_layer_token(token: Any) -> bool:

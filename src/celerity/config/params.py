@@ -1,10 +1,8 @@
-"""Config parameter decorator and DI token helpers."""
+"""Config parameter types and helpers."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from celerity.decorators.params import ParamMeta
+from typing import TYPE_CHECKING, Annotated, Any
 
 if TYPE_CHECKING:
     from celerity.config.service import ConfigNamespace, ConfigService
@@ -21,43 +19,53 @@ def config_namespace_token(name: str) -> str:
     return f"celerity:config:{name}"
 
 
-class Config:
-    """Parameter type for injecting a ``ConfigNamespace`` into a handler.
+class ConfigParam:
+    """DI marker for config namespace injection.
 
-    The namespace name is required — there is no default config namespace.
+    Used inside ``Annotated[...]`` to tell the DI resolver which
+    config namespace to inject.
 
     Usage::
 
-        @get("/settings")
-        async def get_settings(self, config: Config["appConfig"]) -> HttpResponse:
-            api_key = await config.get("api_key")
-            ...
+        from typing import Annotated
+        from celerity.config import ConfigParam, ConfigNamespace
+
+        # Default config namespace:
+        ConfigResource = Annotated[ConfigNamespace, ConfigParam()]
+
+        # Named config namespace:
+        AppConfig = Annotated[ConfigNamespace, ConfigParam("appConfig")]
+
+        @injectable()
+        class SettingsService:
+            def __init__(self, config: AppConfig) -> None:
+                self.config = config  # type checker: ConfigNamespace
     """
 
-    __celerity_param__ = ParamMeta(type="config")
+    resource_type: str = "config"
 
-    def __class_getitem__(cls, namespace_name: str) -> type:
-        """Create a typed Config parameter for a specific namespace."""
-        return type(
-            f"Config[{namespace_name}]",
-            (),
-            {
-                "__celerity_param__": ParamMeta(type="config", key=namespace_name),
-            },
-        )
+    def __init__(self, name: str | None = None) -> None:
+        self.resource_name = name
+
+
+ConfigResource = Annotated[Any, ConfigParam()]
+"""Default config namespace injection type.
+
+Since config always requires a namespace name, prefer creating
+a named alias::
+
+    from typing import Annotated
+    from celerity.config import ConfigParam, ConfigNamespace
+
+    AppConfig = Annotated[ConfigNamespace, ConfigParam("appConfig")]
+"""
 
 
 async def get_config_service(container: ServiceContainer) -> ConfigService:
-    """Programmatic helper to resolve the ConfigService from the container.
+    """Resolve the ConfigService from the container.
 
     Use this when you need access to the full service (e.g. listing
     namespaces or accessing multiple namespaces).
-
-    Args:
-        container: The DI container.
-
-    Returns:
-        The ``ConfigService`` instance.
     """
     from celerity.config.service import CONFIG_SERVICE_TOKEN
 
@@ -69,14 +77,11 @@ async def get_config_namespace(
     container: ServiceContainer,
     namespace: str,
 ) -> ConfigNamespace:
-    """Programmatic helper to resolve a config namespace from the container.
+    """Resolve a config namespace from the container.
 
     Args:
         container: The DI container.
         namespace: The namespace name (e.g. ``"appConfig"``).
-
-    Returns:
-        The ``ConfigNamespace`` instance.
     """
     token = config_namespace_token(namespace)
     result: ConfigNamespace = await container.resolve(token)

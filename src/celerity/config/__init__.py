@@ -1,7 +1,8 @@
 """Configuration service and backends."""
 
 from celerity.config.params import (
-    Config,
+    ConfigParam,
+    ConfigResource,
     config_namespace_token,
     get_config_namespace,
     get_config_service,
@@ -16,8 +17,9 @@ from celerity.config.service import (
 __all__ = [
     "CONFIG_SERVICE_TOKEN",
     "RESOURCE_CONFIG_NAMESPACE",
-    "Config",
     "ConfigNamespace",
+    "ConfigParam",
+    "ConfigResource",
     "ConfigService",
     "config_namespace_token",
     "get_config_namespace",

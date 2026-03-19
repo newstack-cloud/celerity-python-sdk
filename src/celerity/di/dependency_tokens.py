@@ -7,7 +7,7 @@ from typing import Annotated, Any, get_args, get_origin, get_type_hints
 
 from celerity.decorators.injectable import _InjectMarker
 from celerity.metadata.keys import INJECT, get_metadata
-from celerity.resources._tokens import resolve_param_token
+from celerity.resources._tokens import is_resource_marker, resolve_marker_token
 
 
 def get_class_dependency_tokens(target: type) -> list[Any]:
@@ -16,10 +16,11 @@ def get_class_dependency_tokens(target: type) -> list[Any]:
     Resolution order for each parameter:
 
     1. Class-level ``@inject({index: token})`` override.
-    2. ``Annotated[Type, inject(token)]`` marker in the type hint.
-    3. ``__celerity_param__`` on the type hint (e.g. ``Config["appConfig"]``,
-       ``CacheResource["my-cache"]``) -- resolved to a DI token.
-    4. The bare type hint itself.
+    2. ``Annotated[Type, inject(token)]`` -- explicit DI token marker.
+    3. ``Annotated[Type, ResourceMarker]`` -- resource marker (e.g.
+       ``Annotated[Cache, CacheParam()]``) resolved to a DI token.
+    4. ``Annotated[Type, ...]`` -- falls back to the base type.
+    5. The bare type hint itself.
 
     Args:
         target: The class to inspect.
@@ -32,19 +33,11 @@ def get_class_dependency_tokens(target: type) -> list[Any]:
 
         @injectable()
         class OrderService:
-            def __init__(self, db: DatabaseClient, cache: CacheClient) -> None:
+            def __init__(self, db: DatabaseClient, cache: CacheResource) -> None:
                 ...
 
         tokens = get_class_dependency_tokens(OrderService)
-        # [DatabaseClient, CacheClient]
-
-        @injectable()
-        class SettingsService:
-            def __init__(self, config: Config["appConfig"]) -> None:
-                ...
-
-        tokens = get_class_dependency_tokens(SettingsService)
-        # ["celerity:config:appConfig"]
+        # [DatabaseClient, "celerity:cache:default"]
     """
     init = target.__init__  # type: ignore[misc]
     if init is object.__init__:
@@ -72,20 +65,29 @@ def get_class_dependency_tokens(target: type) -> list[Any]:
 
         if get_origin(hint) is Annotated:
             args = get_args(hint)
+
+            # Check for explicit @inject marker first.
             inject_marker = next(
                 (a for a in args[1:] if isinstance(a, _InjectMarker)),
                 None,
             )
             if inject_marker is not None:
                 tokens.append(inject_marker.token)
-            else:
-                tokens.append(args[0])
-            continue
+                continue
 
-        # Check for __celerity_param__ (Config["name"], CacheResource, etc.)
-        param_token = resolve_param_token(hint)
-        if param_token is not None:
-            tokens.append(param_token)
+            # Check for resource marker (CacheParam, ConfigParam, etc.)
+            resource_marker = next(
+                (a for a in args[1:] if is_resource_marker(a)),
+                None,
+            )
+            if resource_marker is not None:
+                marker_token = resolve_marker_token(resource_marker)
+                if marker_token is not None:
+                    tokens.append(marker_token)
+                    continue
+
+            # Fall back to the base type.
+            tokens.append(args[0])
             continue
 
         tokens.append(hint)
