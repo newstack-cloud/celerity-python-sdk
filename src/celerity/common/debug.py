@@ -102,7 +102,7 @@ def _apply_patterns(include: list[str], exclude: list[str]) -> None:
 def _get_sdk_logger_names() -> list[str]:
     """Return all known SDK logger names."""
     return [
-        # Phase 3-4: DI, bootstrap, handlers
+        # DI, bootstrap, handlers
         "celerity.di",
         "celerity.bootstrap",
         "celerity.registry",
@@ -119,17 +119,17 @@ def _get_sdk_logger_names() -> list[str]:
         "celerity.pipeline.guard",
         "celerity.layers",
         "celerity.factory",
-        # Phase 5: CLI extraction
+        # CLI extraction
         "celerity.cli",
-        # Phase 6: Runtime and serverless
+        # Runtime and serverless
         "celerity.runtime",
         "celerity.runtime.mapper",
         "celerity.serverless.aws",
         "celerity.serverless.gcp",
         "celerity.serverless.azure",
-        # Phase 7: Testing
+        # Testing
         "celerity.testing",
-        # Phase 8: Resources
+        # Resources
         "celerity.resource.bucket",
         "celerity.resource.queue",
         "celerity.resource.topic",
@@ -137,7 +137,7 @@ def _get_sdk_logger_names() -> list[str]:
         "celerity.resource.cache",
         "celerity.resource.sql",
         "celerity.resource.layer",
-        # Phase 9: Telemetry
+        # Telemetry
         "celerity.telemetry",
     ]
 
