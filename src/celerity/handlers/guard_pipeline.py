@@ -63,10 +63,12 @@ async def execute_guard_pipeline(
     Returns:
         A ``GuardResult`` indicating whether access is allowed.
     """
-    metadata = HandlerMetadataStore({
-        **(guard.custom_metadata or {}),
-        **(options.handler_metadata or {}),
-    })
+    metadata = HandlerMetadataStore(
+        {
+            **(guard.custom_metadata or {}),
+            **(options.handler_metadata or {}),
+        }
+    )
 
     try:
         result = (
@@ -102,7 +104,9 @@ def _to_pipeline_result(guard_name: str, result: Any) -> GuardResult:
             return GuardResult(allowed=True, auth=result.auth or {})
         logger.debug(
             "guard %s — rejected %d: %s",
-            guard_name, result.status_code, result.message,
+            guard_name,
+            result.status_code,
+            result.message,
         )
         return GuardResult(
             allowed=False,
@@ -190,7 +194,8 @@ async def _invoke_function_guard(
 
 
 async def _resolve_guard_instance(
-    guard: ResolvedGuard, container: ServiceContainer,
+    guard: ResolvedGuard,
+    container: ServiceContainer,
 ) -> object | None:
     """Lazily resolve the guard instance from the DI container."""
     if guard.handler_instance is not None:

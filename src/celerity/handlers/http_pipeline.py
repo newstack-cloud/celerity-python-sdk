@@ -55,10 +55,12 @@ async def execute_http_pipeline(
 
     context = HttpHandlerContext(
         request=request,
-        metadata=HandlerMetadataStore({
-            **(handler.custom_metadata or {}),
-            **({"handler_name": handler_name} if handler_name else {}),
-        }),
+        metadata=HandlerMetadataStore(
+            {
+                **(handler.custom_metadata or {}),
+                **({"handler_name": handler_name} if handler_name else {}),
+            }
+        ),
         container=container,  # type: ignore[arg-type]
     )
 
