@@ -18,6 +18,7 @@ def create_object_storage(
     config: S3ObjectStorageConfig | None = None,
     tracer: CelerityTracer | None = None,
     provider: Platform | None = None,
+    resource_ids: dict[str, str] | None = None,
 ) -> ObjectStorage:
     """Create an ObjectStorage instance for the detected platform.
 
@@ -33,17 +34,21 @@ def create_object_storage(
             from environment variables.
         tracer: Optional tracer for instrumenting operations.
         provider: Override platform detection (mainly for testing).
+        resource_ids: Mapping of logical resource name to physical
+            resource identifier (e.g. S3 bucket name, GCS bucket name).
+            Resolved by the layer from the config service before
+            client creation.
     """
     resolved_provider = provider or detect_platform()
 
     if resolved_provider == "aws":
-        return _create_s3_storage(config, tracer)
+        return _create_s3_storage(config, tracer, resource_ids)
 
     if resolved_provider == "local":
         # Local environments use MinIO (S3-compatible).
         # capture_s3_config() reads env vars including force_path_style
         # which is set to True for local environments.
-        return _create_s3_storage(config, tracer)
+        return _create_s3_storage(config, tracer, resource_ids)
 
     # Future: "gcp" -> GCS, "azure" -> Azure Blob Storage
     raise BucketError(f"Unsupported object storage provider: {resolved_provider!r}")
@@ -52,6 +57,7 @@ def create_object_storage(
 def _create_s3_storage(
     config: S3ObjectStorageConfig | None,
     tracer: CelerityTracer | None,
+    resource_ids: dict[str, str] | None,
 ) -> ObjectStorage:
     import aioboto3
 
@@ -60,4 +66,6 @@ def _create_s3_storage(
 
     resolved_config = config or capture_s3_config()
     session = aioboto3.Session()
-    return S3ObjectStorage(session=session, config=resolved_config, tracer=tracer)
+    return S3ObjectStorage(
+        session=session, config=resolved_config, tracer=tracer, resource_ids=resource_ids
+    )

@@ -34,6 +34,18 @@ def _make_container() -> AsyncMock:
     return container
 
 
+def _make_config_service(id_map: dict[str, str]) -> MagicMock:
+    config_service = MagicMock()
+    namespace = MagicMock()
+
+    async def get(key: str) -> str | None:
+        return id_map.get(key)
+
+    namespace.get = AsyncMock(side_effect=get)
+    config_service.namespace = MagicMock(return_value=namespace)
+    return config_service
+
+
 class TestObjectStorageLayer:
     @pytest.mark.asyncio
     async def test_no_op_without_links(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -61,6 +73,8 @@ class TestObjectStorageLayer:
         mock_storage.close = AsyncMock()
         mock_factory.return_value = mock_storage
 
+        config_service = _make_config_service({"myBucket": "actual-bucket-name"})
+
         monkeypatch.setenv(
             "CELERITY_RESOURCE_LINKS",
             json.dumps({"my-bucket": {"type": "bucket", "configKey": "myBucket"}}),
@@ -68,6 +82,7 @@ class TestObjectStorageLayer:
 
         layer = ObjectStorageLayer()
         container = _make_container()
+        container._registered["ConfigService"] = config_service
         ctx = _make_context(container)
         next_handler = AsyncMock(return_value="ok")
 
@@ -89,6 +104,8 @@ class TestObjectStorageLayer:
         mock_storage.close = AsyncMock()
         mock_factory.return_value = mock_storage
 
+        config_service = _make_config_service({"images": "images-bucket", "docs": "docs-bucket"})
+
         monkeypatch.setenv(
             "CELERITY_RESOURCE_LINKS",
             json.dumps(
@@ -101,6 +118,7 @@ class TestObjectStorageLayer:
 
         layer = ObjectStorageLayer()
         container = _make_container()
+        container._registered["ConfigService"] = config_service
         ctx = _make_context(container)
         next_handler = AsyncMock(return_value="ok")
 
@@ -123,6 +141,8 @@ class TestObjectStorageLayer:
         mock_storage.close = AsyncMock()
         mock_factory.return_value = mock_storage
 
+        config_service = _make_config_service({"b": "test-bucket"})
+
         monkeypatch.setenv(
             "CELERITY_RESOURCE_LINKS",
             json.dumps({"bucket": {"type": "bucket", "configKey": "b"}}),
@@ -130,6 +150,7 @@ class TestObjectStorageLayer:
 
         layer = ObjectStorageLayer()
         container = _make_container()
+        container._registered["ConfigService"] = config_service
         ctx = _make_context(container)
         next_handler = AsyncMock(return_value="ok")
 
@@ -162,6 +183,8 @@ class TestObjectStorageLayer:
         mock_storage.close = AsyncMock()
         mock_factory.return_value = mock_storage
 
+        config_service = _make_config_service({"b": "test-bucket"})
+
         monkeypatch.setenv(
             "CELERITY_RESOURCE_LINKS",
             json.dumps({"bucket": {"type": "bucket", "configKey": "b"}}),
@@ -169,6 +192,7 @@ class TestObjectStorageLayer:
 
         layer = ObjectStorageLayer()
         container = _make_container()
+        container._registered["ConfigService"] = config_service
         ctx = _make_context(container)
         next_handler = AsyncMock(return_value="ok")
 

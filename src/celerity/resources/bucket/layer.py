@@ -6,6 +6,7 @@ import contextlib
 import logging
 from typing import TYPE_CHECKING, Any
 
+from celerity.config.service import CONFIG_SERVICE_TOKEN, RESOURCE_CONFIG_NAMESPACE
 from celerity.resources._common import capture_resource_links, get_links_of_type
 from celerity.resources._tokens import default_token, resource_token
 from celerity.resources.bucket.factory import create_object_storage
@@ -47,11 +48,20 @@ class ObjectStorageLayer(CelerityLayer):
         with contextlib.suppress(Exception):
             tracer = await container.resolve(TRACER_TOKEN)
 
-        # One shared ObjectStorage client for all bucket resources.
-        storage = create_object_storage(tracer=tracer)
+        config_service = await container.resolve(CONFIG_SERVICE_TOKEN)
+        resource_config = config_service.namespace(RESOURCE_CONFIG_NAMESPACE)
+
+        # Resolve all resource name → physical ID mappings first.
+        resource_ids: dict[str, str] = {}
+        for resource_name, config_key in bucket_links.items():
+            physical_id = await resource_config.get(config_key)
+            resource_ids[resource_name] = physical_id or resource_name
+
+        # One shared ObjectStorage client with the full mapping.
+        storage = create_object_storage(tracer=tracer, resource_ids=resource_ids)
         self._storages.append(storage)
 
-        for resource_name, _config_key in bucket_links.items():
+        for resource_name in bucket_links:
             bucket_handle = storage.bucket(resource_name)
             container.register_value(
                 resource_token("bucket", resource_name),

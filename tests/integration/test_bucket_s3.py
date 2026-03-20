@@ -105,8 +105,8 @@ async def bucket(s3_buckets: tuple[str, str]) -> AsyncGenerator[Bucket]:
         force_path_style=True,
     )
     session = aioboto3.Session()
-    storage = S3ObjectStorage(session=session, config=config)
-    yield storage.bucket(s3_buckets[0])
+    storage = S3ObjectStorage(session=session, config=config, resource_ids={"test": s3_buckets[0]})
+    yield storage.bucket("test")
     await storage.close()
 
 
@@ -119,8 +119,8 @@ async def dest_bucket(s3_buckets: tuple[str, str]) -> AsyncGenerator[Bucket]:
         force_path_style=True,
     )
     session = aioboto3.Session()
-    storage = S3ObjectStorage(session=session, config=config)
-    yield storage.bucket(s3_buckets[1])
+    storage = S3ObjectStorage(session=session, config=config, resource_ids={"dest": s3_buckets[1]})
+    yield storage.bucket("dest")
     await storage.close()
 
 

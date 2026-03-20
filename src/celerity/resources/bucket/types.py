@@ -157,12 +157,22 @@ class Bucket(ABC):
 
 
 class ObjectStorage(ABC):
-    """Top-level object storage client managing the S3 session."""
+    """Top-level object storage client managing the provider session.
+
+    Resource name to provider-specific identifier mapping (e.g. S3
+    bucket name, GCS bucket name) is resolved at construction time
+    so ``bucket()`` takes only the logical resource name.
+    """
 
     @abstractmethod
     def bucket(self, name: str) -> Bucket:
-        """Get a bucket handle for the given bucket name."""
+        """Get a bucket handle for a named resource.
+
+        Args:
+            name: The logical resource name. The provider maps this
+                to a physical identifier internally.
+        """
 
     @abstractmethod
     async def close(self) -> None:
-        """Close the underlying S3 session."""
+        """Close the underlying provider session."""

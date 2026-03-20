@@ -42,10 +42,12 @@ class S3ObjectStorage(ObjectStorage):
         session: aioboto3.Session,
         config: S3ObjectStorageConfig,
         tracer: CelerityTracer | None = None,
+        resource_ids: dict[str, str] | None = None,
     ) -> None:
         self._session = session
         self._config = config
         self._tracer = tracer
+        self._resource_ids = resource_ids or {}
         self._exit_stack = AsyncExitStack()
         self._client: S3Client | None = None
 
@@ -72,9 +74,10 @@ class S3ObjectStorage(ObjectStorage):
         return self._client
 
     def bucket(self, name: str) -> Bucket:
+        bucket_name = self._resource_ids.get(name, name)
         return S3Bucket(
             client_provider=self._ensure_client,
-            bucket_name=name,
+            bucket_name=bucket_name,
             tracer=self._tracer,
         )
 
