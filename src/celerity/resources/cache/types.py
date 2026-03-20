@@ -226,11 +226,20 @@ class Cache(ABC):
 
 
 class CacheClient(ABC):
-    """Top-level cache client managing the Redis connection."""
+    """Top-level cache client managing the Redis connection.
+
+    Resource metadata (key prefix) is resolved at construction time
+    so ``cache()`` takes only the logical resource name.
+    """
 
     @abstractmethod
-    def cache(self, name: str, key_prefix: str | None = None) -> Cache:
-        """Get a cache handle for a named resource with optional key prefix."""
+    def cache(self, name: str) -> Cache:
+        """Get a cache handle for a named resource.
+
+        Args:
+            name: The logical resource name. The provider resolves
+                key prefix and other metadata internally.
+        """
 
     @abstractmethod
     async def close(self) -> None:

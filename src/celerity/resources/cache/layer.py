@@ -61,21 +61,23 @@ class CacheLayer(CelerityLayer):
         with contextlib.suppress(Exception):
             tracer = await container.resolve(TRACER_TOKEN)
 
-        # Create one shared Redis client for the first resource,
-        # then create per-resource cache handles.
+        # Resolve all resource name → key prefix mappings first.
+        key_prefixes: dict[str, str] = {}
+        for resource_name, config_key in cache_links.items():
+            key_prefix_raw = await resource_config.get(f"{config_key}_keyPrefix")
+            key_prefixes[resource_name] = key_prefix_raw or ""
+
+        # Create one shared Redis client with the full mapping.
         first_config_key = next(iter(cache_links.values()))
         connection_info, auth = await resolve_cache_credentials(resource_config, first_config_key)
         connection_config = resolve_connection_config(runtime_mode)
         client = await create_redis_cache_client(
-            connection_info, auth, connection_config, tracer=tracer
+            connection_info, auth, connection_config, tracer=tracer, key_prefixes=key_prefixes
         )
         self._client = client
 
-        for resource_name, config_key in cache_links.items():
-            key_prefix_raw = await resource_config.get(f"{config_key}_keyPrefix")
-            key_prefix = key_prefix_raw or ""
-            cache_name = await resource_config.get(config_key) or resource_name
-            cache_handle = client.cache(cache_name, key_prefix=key_prefix)
+        for resource_name in cache_links:
+            cache_handle = client.cache(resource_name)
             container.register_value(
                 resource_token("cache", resource_name),
                 cache_handle,

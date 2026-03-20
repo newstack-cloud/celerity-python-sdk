@@ -30,12 +30,23 @@ async def create_cache_client(
     config_namespace: ConfigNamespace,
     config_key: str,
     runtime_mode: RuntimeMode,
+    key_prefixes: dict[str, str] | None = None,
 ) -> CacheClient:
     """Create a cache client from config store values.
 
     Resolves credentials and connection settings, then creates
     the appropriate Redis client (standalone or cluster).
+
+    Args:
+        config_namespace: Config namespace for credential resolution.
+        config_key: Config key for the cache resource.
+        runtime_mode: Runtime mode for connection settings.
+        key_prefixes: Mapping of resource name to key prefix.
+            Resolved by the layer from the config service before
+            client creation.
     """
     connection_info, auth = await resolve_cache_credentials(config_namespace, config_key)
     connection_config = resolve_connection_config(runtime_mode)
-    return await create_redis_cache_client(connection_info, auth, connection_config)
+    return await create_redis_cache_client(
+        connection_info, auth, connection_config, key_prefixes=key_prefixes
+    )
