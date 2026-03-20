@@ -46,6 +46,7 @@ if TYPE_CHECKING:
     from celerity.resources.datastore.providers.dynamodb.types import (
         DynamoDBDatastoreConfig,
     )
+    from celerity.types.telemetry import CelerityTracer
 
 logger = logging.getLogger("celerity.datastore.dynamodb")
 
@@ -56,9 +57,15 @@ _BATCH_BASE_DELAY = 0.05  # 50ms
 class DynamoDBDatastoreClient(DatastoreClient):
     """DatastoreClient backed by aioboto3 DynamoDB."""
 
-    def __init__(self, session: aioboto3.Session, config: DynamoDBDatastoreConfig) -> None:
+    def __init__(
+        self,
+        session: aioboto3.Session,
+        config: DynamoDBDatastoreConfig,
+        tracer: CelerityTracer | None = None,
+    ) -> None:
         self._session = session
         self._config = config
+        self._tracer = tracer
         self._exit_stack = AsyncExitStack()
         self._client: DynamoDBClient | None = None
 
@@ -73,6 +80,11 @@ class DynamoDBDatastoreClient(DatastoreClient):
             self._client = await self._exit_stack.enter_async_context(
                 self._session.client("dynamodb", **kwargs)
             )
+            logger.debug(
+                "created DynamoDB client region=%s endpoint=%s",
+                self._config.region,
+                self._config.endpoint_url,
+            )
         return self._client
 
     def datastore(self, name: str, table_name: str) -> Datastore:
@@ -80,6 +92,7 @@ class DynamoDBDatastoreClient(DatastoreClient):
         return DynamoDBDatastore(
             client_provider=self._ensure_client,
             table_name=table_name,
+            tracer=self._tracer,
         )
 
     async def close(self) -> None:
@@ -95,73 +108,64 @@ class DynamoDBDatastore(Datastore):
         self,
         client_provider: Callable[[], Awaitable[DynamoDBClient]],
         table_name: str,
+        tracer: CelerityTracer | None = None,
     ) -> None:
         self._client_provider = client_provider
         self._table_name = table_name
+        self._tracer = tracer
+
+    # -------------------------------------------------------------------
+    # Tracing helper
+    # -------------------------------------------------------------------
+
+    async def _traced(
+        self,
+        name: str,
+        fn: Callable[..., Awaitable[Any]],
+        attributes: dict[str, Any] | None = None,
+    ) -> Any:
+        """Execute *fn* within a tracer span if a tracer is available."""
+        if not self._tracer:
+            return await fn()
+        return await self._tracer.with_span(name, lambda _span: fn(), attributes=attributes)
+
+    # -------------------------------------------------------------------
+    # Public API (thin wrappers that add tracing)
+    # -------------------------------------------------------------------
 
     async def get_item(
         self,
         key: dict[str, Any],
         options: GetItemOptions | None = None,
     ) -> dict[str, Any] | None:
-        client = await self._client_provider()
-        params: dict[str, Any] = {
-            "TableName": self._table_name,
-            "Key": marshall_item(key),
-        }
-        if options:
-            if options.consistent_read:
-                params["ConsistentRead"] = True
-            if options.projection:
-                params["ProjectionExpression"] = ", ".join(options.projection)
-
-        try:
-            response = await client.get_item(**params)
-        except Exception as exc:
-            raise _wrap_error(exc, "get_item") from exc
-
-        raw_item: dict[str, Any] | None = response.get("Item")
-        return unmarshall_item(raw_item) if raw_item else None
+        result: dict[str, Any] | None = await self._traced(
+            "celerity.datastore.get_item",
+            lambda: self._get_item(key, options),
+            attributes={"datastore.table": self._table_name},
+        )
+        return result
 
     async def put_item(
         self,
         item: dict[str, Any],
         options: PutItemOptions | None = None,
     ) -> None:
-        client = await self._client_provider()
-        params: dict[str, Any] = {
-            "TableName": self._table_name,
-            "Item": marshall_item(item),
-        }
-        if options and options.condition:
-            _apply_condition(params, options.condition, "ConditionExpression")
-
-        try:
-            await client.put_item(**params)
-        except client.exceptions.ConditionalCheckFailedException as exc:
-            raise ConditionalCheckFailedError(str(exc), cause=exc) from exc
-        except Exception as exc:
-            raise _wrap_error(exc, "put_item") from exc
+        await self._traced(
+            "celerity.datastore.put_item",
+            lambda: self._put_item(item, options),
+            attributes={"datastore.table": self._table_name},
+        )
 
     async def delete_item(
         self,
         key: dict[str, Any],
         options: DeleteItemOptions | None = None,
     ) -> None:
-        client = await self._client_provider()
-        params: dict[str, Any] = {
-            "TableName": self._table_name,
-            "Key": marshall_item(key),
-        }
-        if options and options.condition:
-            _apply_condition(params, options.condition, "ConditionExpression")
-
-        try:
-            await client.delete_item(**params)
-        except client.exceptions.ConditionalCheckFailedException as exc:
-            raise ConditionalCheckFailedError(str(exc), cause=exc) from exc
-        except Exception as exc:
-            raise _wrap_error(exc, "delete_item") from exc
+        await self._traced(
+            "celerity.datastore.delete_item",
+            lambda: self._delete_item(key, options),
+            attributes={"datastore.table": self._table_name},
+        )
 
     def query(self, params: QueryParams) -> ItemListing:
         request_params = self._build_query_params(params)
@@ -188,6 +192,106 @@ class DynamoDBDatastore(Datastore):
         keys: list[dict[str, Any]],
         options: BatchGetItemsOptions | None = None,
     ) -> list[dict[str, Any]]:
+        result: list[dict[str, Any]] = await self._traced(
+            "celerity.datastore.batch_get_items",
+            lambda: self._batch_get_items(keys, options),
+            attributes={
+                "datastore.table": self._table_name,
+                "datastore.batch_size": len(keys),
+            },
+        )
+        return result
+
+    async def batch_write_items(
+        self,
+        operations: list[PutOperation | DeleteOperation],
+    ) -> None:
+        await self._traced(
+            "celerity.datastore.batch_write_items",
+            lambda: self._batch_write_items(operations),
+            attributes={
+                "datastore.table": self._table_name,
+                "datastore.batch_size": len(operations),
+            },
+        )
+
+    # -------------------------------------------------------------------
+    # Implementation methods
+    # -------------------------------------------------------------------
+
+    async def _get_item(
+        self,
+        key: dict[str, Any],
+        options: GetItemOptions | None,
+    ) -> dict[str, Any] | None:
+        logger.debug("get_item %s %s", self._table_name, key)
+        client = await self._client_provider()
+        params: dict[str, Any] = {
+            "TableName": self._table_name,
+            "Key": marshall_item(key),
+        }
+        if options:
+            if options.consistent_read:
+                params["ConsistentRead"] = True
+            if options.projection:
+                params["ProjectionExpression"] = ", ".join(options.projection)
+
+        try:
+            response = await client.get_item(**params)
+        except Exception as exc:
+            raise _wrap_error(exc, "get_item") from exc
+
+        raw_item: dict[str, Any] | None = response.get("Item")
+        return unmarshall_item(raw_item) if raw_item else None
+
+    async def _put_item(
+        self,
+        item: dict[str, Any],
+        options: PutItemOptions | None,
+    ) -> None:
+        logger.debug("put_item %s", self._table_name)
+        client = await self._client_provider()
+        params: dict[str, Any] = {
+            "TableName": self._table_name,
+            "Item": marshall_item(item),
+        }
+        if options and options.condition:
+            _apply_condition(params, options.condition, "ConditionExpression")
+
+        try:
+            await client.put_item(**params)
+        except client.exceptions.ConditionalCheckFailedException as exc:
+            raise ConditionalCheckFailedError(str(exc), cause=exc) from exc
+        except Exception as exc:
+            raise _wrap_error(exc, "put_item") from exc
+
+    async def _delete_item(
+        self,
+        key: dict[str, Any],
+        options: DeleteItemOptions | None,
+    ) -> None:
+        logger.debug("delete_item %s %s", self._table_name, key)
+        client = await self._client_provider()
+        params: dict[str, Any] = {
+            "TableName": self._table_name,
+            "Key": marshall_item(key),
+        }
+        if options and options.condition:
+            _apply_condition(params, options.condition, "ConditionExpression")
+
+        try:
+            await client.delete_item(**params)
+        except client.exceptions.ConditionalCheckFailedException as exc:
+            raise ConditionalCheckFailedError(str(exc), cause=exc) from exc
+        except Exception as exc:
+            raise _wrap_error(exc, "delete_item") from exc
+
+    async def _batch_get_items(
+        self,
+        keys: list[dict[str, Any]],
+        options: BatchGetItemsOptions | None,
+    ) -> list[dict[str, Any]]:
+        logger.debug("batch_get_items %s count=%d", self._table_name, len(keys))
         client = await self._client_provider()
         marshalled_keys = [marshall_item(k) for k in keys]
         keys_and_attrs: dict[str, Any] = {"Keys": marshalled_keys}
@@ -225,10 +329,11 @@ class DynamoDBDatastore(Datastore):
 
         return all_items
 
-    async def batch_write_items(
+    async def _batch_write_items(
         self,
         operations: list[PutOperation | DeleteOperation],
     ) -> None:
+        logger.debug("batch_write_items %s count=%d", self._table_name, len(operations))
         client = await self._client_provider()
         write_requests: list[Any] = []
         for op in operations:
@@ -263,6 +368,7 @@ class DynamoDBDatastore(Datastore):
 
     async def _execute_query(self, **params: Any) -> dict[str, Any]:
         """Execute a DynamoDB query. Called by DynamoDBItemListing."""
+        logger.debug("query %s", self._table_name)
         client = await self._client_provider()
         try:
             response = await client.query(**params)
@@ -275,6 +381,7 @@ class DynamoDBDatastore(Datastore):
 
     async def _execute_scan(self, **params: Any) -> dict[str, Any]:
         """Execute a DynamoDB scan. Called by DynamoDBItemListing."""
+        logger.debug("scan %s", self._table_name)
         client = await self._client_provider()
         try:
             response = await client.scan(**params)

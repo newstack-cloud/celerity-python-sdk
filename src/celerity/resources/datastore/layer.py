@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -9,6 +10,7 @@ from celerity.config.service import CONFIG_SERVICE_TOKEN, RESOURCE_CONFIG_NAMESP
 from celerity.resources._common import capture_resource_links, get_links_of_type
 from celerity.resources._tokens import default_token, resource_token
 from celerity.resources.datastore.factory import create_datastore_client
+from celerity.telemetry.helpers import TRACER_TOKEN
 from celerity.types.layer import CelerityLayer
 
 if TYPE_CHECKING:
@@ -43,8 +45,13 @@ class DatastoreLayer(CelerityLayer):
         if not datastore_links:
             return
 
+        # Resolve tracer if available (registered by TelemetryLayer).
+        tracer = None
+        with contextlib.suppress(Exception):
+            tracer = await container.resolve(TRACER_TOKEN)
+
         # One shared client for all datastore resources.
-        client = create_datastore_client()
+        client = create_datastore_client(tracer=tracer)
         self._client = client
 
         config_service = await container.resolve(CONFIG_SERVICE_TOKEN)
