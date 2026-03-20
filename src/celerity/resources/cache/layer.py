@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -17,6 +18,7 @@ from celerity.resources.cache.credentials import resolve_cache_credentials
 from celerity.resources.cache.providers.redis.client import (
     create_redis_cache_client,
 )
+from celerity.telemetry.helpers import TRACER_TOKEN
 from celerity.types.layer import CelerityLayer
 
 if TYPE_CHECKING:
@@ -54,12 +56,19 @@ class CacheLayer(CelerityLayer):
         resource_config = config_service.namespace(RESOURCE_CONFIG_NAMESPACE)
         deploy_target = detect_deploy_target()
 
+        # Resolve tracer if available (registered by TelemetryLayer).
+        tracer = None
+        with contextlib.suppress(Exception):
+            tracer = await container.resolve(TRACER_TOKEN)
+
         # Create one shared Redis client for the first resource,
         # then create per-resource cache handles.
         first_config_key = next(iter(cache_links.values()))
         connection_info, auth = await resolve_cache_credentials(resource_config, first_config_key)
         connection_config = resolve_connection_config(deploy_target)
-        client = await create_redis_cache_client(connection_info, auth, connection_config)
+        client = await create_redis_cache_client(
+            connection_info, auth, connection_config, tracer=tracer
+        )
         self._client = client
 
         for resource_name, config_key in cache_links.items():

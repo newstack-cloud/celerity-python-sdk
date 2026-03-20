@@ -26,15 +26,23 @@ logger = logging.getLogger("celerity.cache.redis")
 class RedisCacheClient(CacheClient):
     """CacheClient backed by redis-py (standalone or cluster)."""
 
-    def __init__(self, client: Redis[str] | RedisCluster[str], cluster_mode: bool) -> None:
+    def __init__(
+        self,
+        client: Redis[str] | RedisCluster[str],
+        cluster_mode: bool,
+        tracer: Any | None = None,
+    ) -> None:
         self._client: Any = client
         self._cluster_mode = cluster_mode
+        self._tracer = tracer
 
     def cache(self, name: str, key_prefix: str | None = None) -> Cache:
         return RedisCache(
             client=self._client,
             cluster_mode=self._cluster_mode,
             key_prefix=key_prefix or "",
+            resource_name=name,
+            tracer=self._tracer,
         )
 
     async def close(self) -> None:
@@ -45,6 +53,7 @@ async def create_redis_cache_client(
     connection_info: CacheConnectionInfo,
     auth: CachePasswordAuth | CacheIamAuth,
     connection_config: ConnectionConfig,
+    tracer: Any | None = None,
 ) -> RedisCacheClient:
     """Create a Redis client (standalone or cluster).
 
@@ -101,7 +110,7 @@ async def create_redis_cache_client(
     if not connection_config.lazy_connect:
         await client.ping()  # type: ignore[union-attr]
 
-    return RedisCacheClient(client=client, cluster_mode=connection_info.cluster_mode)
+    return RedisCacheClient(client=client, cluster_mode=connection_info.cluster_mode, tracer=tracer)
 
 
 def _make_credential_provider(auth: CacheIamAuth) -> Any:
