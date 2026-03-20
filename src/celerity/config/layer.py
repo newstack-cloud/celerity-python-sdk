@@ -12,7 +12,7 @@ from celerity.config.service import (
     ConfigService,
     ConfigServiceImpl,
 )
-from celerity.resources._common import detect_deploy_target, detect_platform
+from celerity.resources._common import detect_platform, detect_runtime_mode
 from celerity.types.layer import CelerityLayer
 
 if TYPE_CHECKING:
@@ -48,13 +48,13 @@ class ConfigLayer(CelerityLayer):
     async def _init(self, container: Any) -> None:
         config_service = ConfigService()
         platform = detect_platform()
-        deploy_target = detect_deploy_target()
+        runtime_mode = detect_runtime_mode()
 
         store_id = os.environ.get("CELERITY_CONFIG_STORE_ID")
         store_kind = os.environ.get("CELERITY_CONFIG_STORE_KIND", "secrets-manager")
 
         if store_id:
-            backend = _resolve_backend(platform, store_kind, deploy_target)
+            backend = _resolve_backend(platform, store_kind, runtime_mode)
             data = await backend.fetch(store_id)
             ns = ConfigServiceImpl(data)
             config_service.register_namespace("resources", ns)
@@ -79,7 +79,7 @@ class ConfigLayer(CelerityLayer):
                 ns_name = key[prefix_len:-suffix_len].lower()
                 kind_key = f"CELERITY_CONFIG_{ns_name.upper()}_STORE_KIND"
                 ns_kind = os.environ.get(kind_key, store_kind)
-                ns_backend = _resolve_backend(platform, ns_kind, deploy_target)
+                ns_backend = _resolve_backend(platform, ns_kind, runtime_mode)
                 ns_data = await ns_backend.fetch(value)
                 config_service.register_namespace(ns_name, ConfigServiceImpl(ns_data))
                 logger.debug("config: loaded namespace %s (%d keys)", ns_name, len(ns_data))
@@ -97,7 +97,7 @@ class ConfigLayer(CelerityLayer):
 def _resolve_backend(
     platform: str,
     store_kind: str,
-    deploy_target: str,
+    runtime_mode: str,
 ) -> ConfigBackend:
     """Select the config backend based on platform and store kind."""
     if platform == "local":
@@ -114,7 +114,7 @@ def _resolve_backend(
             return AwsParameterStoreBackend()
 
         # secrets-manager (default for AWS)
-        if deploy_target == "functions" and os.environ.get(
+        if runtime_mode == "functions" and os.environ.get(
             "PARAMETERS_SECRETS_EXTENSION_HTTP_PORT",
         ):
             from celerity.config.backends.aws.lambda_extension import (

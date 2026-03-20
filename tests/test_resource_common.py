@@ -9,8 +9,8 @@ import pytest
 from celerity.resources._common import (
     ResourceLink,
     capture_resource_links,
-    detect_deploy_target,
     detect_platform,
+    detect_runtime_mode,
     get_links_of_type,
     get_resource_types,
 )
@@ -106,14 +106,14 @@ class TestDetectPlatform:
         assert detect_platform() == "other"
 
 
-class TestDetectDeployTarget:
+class TestDetectRuntimeMode:
     def test_runtime_when_env_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("CELERITY_RUNTIME", "true")
-        assert detect_deploy_target() == "runtime"
+        assert detect_runtime_mode() == "runtime"
 
     def test_functions_when_env_absent(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("CELERITY_RUNTIME", raising=False)
-        assert detect_deploy_target() == "functions"
+        assert detect_runtime_mode() == "functions"
 
 
 # ---------------------------------------------------------------------------

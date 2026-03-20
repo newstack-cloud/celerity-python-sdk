@@ -28,6 +28,14 @@ EOF
   exit 1
 }
 
+## Load test environment variables (dummy AWS credentials etc.)
+if [[ -f "$REPO_ROOT/.env.test" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$REPO_ROOT/.env.test"
+  set +a
+fi
+
 MODE="${1:-unit}"
 shift 2>/dev/null || true
 

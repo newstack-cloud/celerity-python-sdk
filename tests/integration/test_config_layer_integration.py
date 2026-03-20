@@ -68,7 +68,6 @@ class TestConfigLayerWithLocalStack:
     async def test_loads_config_from_parameter_store(
         self,
         monkeypatch: Any,
-        aws_env: None,
     ) -> None:
         """ConfigLayer loads config from SSM Parameter Store."""
         ssm = boto3.client(
@@ -109,7 +108,6 @@ class TestConfigLayerWithLocalStack:
     async def test_loads_config_from_secrets_manager(
         self,
         monkeypatch: Any,
-        aws_env: None,
     ) -> None:
         """ConfigLayer loads config from Secrets Manager."""
         sm = boto3.client(

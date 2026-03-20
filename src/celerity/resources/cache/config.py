@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from celerity.resources._common import DeployTarget
+    from celerity.resources._common import RuntimeMode
 
 
 @dataclass(frozen=True)
@@ -50,19 +50,19 @@ _CONFIG_KEY_MAP: dict[str, str] = {
 
 
 def resolve_connection_config(
-    deploy_target: DeployTarget,
+    runtime_mode: RuntimeMode,
     overrides: dict[str, str] | None = None,
 ) -> ConnectionConfig:
     """Select a preset and apply per-resource overrides from config keys.
 
     Args:
-        deploy_target: ``"functions"`` or ``"runtime"``.
+        runtime_mode: ``"functions"`` or ``"runtime"``.
         overrides: Optional config key overrides (camelCase keys).
 
     Returns:
         A ``ConnectionConfig`` with overrides applied.
     """
-    base = FUNCTIONS_CONNECTION if deploy_target == "functions" else RUNTIME_CONNECTION
+    base = FUNCTIONS_CONNECTION if runtime_mode == "functions" else RUNTIME_CONNECTION
 
     if not overrides:
         return base

@@ -120,7 +120,7 @@ async def dynamodb_table() -> AsyncGenerator[str]:
 
 
 @pytest.fixture
-async def datastore(dynamodb_table: str, aws_env: None) -> AsyncGenerator[Datastore]:
+async def datastore(dynamodb_table: str) -> AsyncGenerator[Datastore]:
     """Create a DynamoDBDatastore for the test table."""
     config = DynamoDBDatastoreConfig(
         region=REGION,

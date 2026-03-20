@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from celerity.config.service import CONFIG_SERVICE_TOKEN, RESOURCE_CONFIG_NAMESPACE
 from celerity.resources._common import (
     capture_resource_links,
-    detect_deploy_target,
+    detect_runtime_mode,
     get_links_of_type,
 )
 from celerity.resources._tokens import default_token, resource_token
@@ -54,7 +54,7 @@ class CacheLayer(CelerityLayer):
 
         config_service = await container.resolve(CONFIG_SERVICE_TOKEN)
         resource_config = config_service.namespace(RESOURCE_CONFIG_NAMESPACE)
-        deploy_target = detect_deploy_target()
+        runtime_mode = detect_runtime_mode()
 
         # Resolve tracer if available (registered by TelemetryLayer).
         tracer = None
@@ -65,7 +65,7 @@ class CacheLayer(CelerityLayer):
         # then create per-resource cache handles.
         first_config_key = next(iter(cache_links.values()))
         connection_info, auth = await resolve_cache_credentials(resource_config, first_config_key)
-        connection_config = resolve_connection_config(deploy_target)
+        connection_config = resolve_connection_config(runtime_mode)
         client = await create_redis_cache_client(
             connection_info, auth, connection_config, tracer=tracer
         )

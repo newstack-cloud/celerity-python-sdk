@@ -13,7 +13,7 @@ logger = logging.getLogger("celerity.resource")
 type Platform = str
 """One of ``"aws"``, ``"gcp"``, ``"azure"``, ``"local"``, ``"other"``."""
 
-type DeployTarget = str
+type RuntimeMode = str
 """One of ``"functions"`` or ``"runtime"``."""
 
 
@@ -81,9 +81,24 @@ def detect_platform() -> Platform:
     return os.environ.get("CELERITY_PLATFORM", "other")
 
 
-def detect_deploy_target() -> DeployTarget:
-    """Detect deploy target from environment.
+def detect_runtime_mode() -> RuntimeMode:
+    """Detect the runtime execution mode from environment.
 
-    ``CELERITY_RUNTIME`` present -> ``"runtime"``, absent -> ``"functions"``.
+    ``CELERITY_RUNTIME`` present → ``"runtime"`` (long-lived server),
+    absent → ``"functions"`` (serverless/FaaS).
     """
     return "runtime" if os.environ.get("CELERITY_RUNTIME") else "functions"
+
+
+def detect_cloud_deploy_target() -> str:
+    """Read ``CELERITY_DEPLOY_TARGET`` env var.
+
+    The deploy target identifies the cloud deployment configuration,
+    e.g. ``"aws"``, ``"aws-serverless"``, ``"gcloud"``,
+    ``"gcloud-serverless"``, ``"azure"``, ``"azure-serverless"``.
+
+    Only used by the datastore factory in local environments to select
+    the correct emulator (e.g. DynamoDB Local for AWS targets).
+    Defaults to ``"aws"`` when not set.
+    """
+    return os.environ.get("CELERITY_DEPLOY_TARGET", "aws")

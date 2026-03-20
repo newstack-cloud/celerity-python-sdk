@@ -38,7 +38,7 @@ def _secrets_client() -> Any:
 
 
 class TestParameterStoreBackend:
-    async def test_fetches_parameters_by_path(self, aws_env: None) -> None:
+    async def test_fetches_parameters_by_path(self) -> None:
         """Store parameters under a path and fetch them."""
         client = _ssm_client()
         try:
@@ -65,7 +65,7 @@ class TestParameterStoreBackend:
                 with contextlib.suppress(Exception):
                     client.delete_parameter(Name=f"{SSM_PATH}{suffix}")
 
-    async def test_returns_empty_for_missing_path(self, aws_env: None) -> None:
+    async def test_returns_empty_for_missing_path(self) -> None:
         """Missing path returns empty dict."""
         backend = AwsParameterStoreBackend()
         result = await backend.fetch("/celerity-test/nonexistent/")
@@ -73,7 +73,7 @@ class TestParameterStoreBackend:
 
 
 class TestSecretsManagerBackend:
-    async def test_fetches_secret_as_json(self, aws_env: None) -> None:
+    async def test_fetches_secret_as_json(self) -> None:
         """Store a JSON secret and fetch key-value pairs."""
         client = _secrets_client()
         secret_data = {
@@ -98,7 +98,7 @@ class TestSecretsManagerBackend:
                     ForceDeleteWithoutRecovery=True,
                 )
 
-    async def test_returns_empty_for_non_json_secret(self, aws_env: None) -> None:
+    async def test_returns_empty_for_non_json_secret(self) -> None:
         """Non-JSON secret returns empty dict."""
         client = _secrets_client()
         non_json_id = "celerity-test/non-json"
