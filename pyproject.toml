@@ -46,6 +46,7 @@ dev = [
     "boto3-stubs>=1.34",
     "types-aioboto3>=13.0",
     "types-aiobotocore-dynamodb>=2.15",
+    "types-aiobotocore-s3>=2.15",
     "types-redis>=4.6",
     "ruff>=0.8",
     "mypy>=1.13",
