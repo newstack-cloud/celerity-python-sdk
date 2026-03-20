@@ -127,8 +127,10 @@ async def datastore(dynamodb_table: str) -> AsyncGenerator[Datastore]:
         endpoint_url=ENDPOINT_URL,
     )
     session = aioboto3.Session()
-    client = DynamoDBDatastoreClient(session=session, config=config)
-    ds = client.datastore("test", table_name=dynamodb_table)
+    client = DynamoDBDatastoreClient(
+        session=session, config=config, resource_ids={"test": dynamodb_table}
+    )
+    ds = client.datastore("test")
     yield ds
     await client.close()
 

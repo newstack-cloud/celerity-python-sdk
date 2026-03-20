@@ -230,11 +230,21 @@ class Datastore(ABC):
 
 
 class DatastoreClient(ABC):
-    """Top-level datastore client managing the provider connection."""
+    """Top-level datastore client managing the provider connection.
+
+    Resource name to provider-specific identifier mapping (e.g. DynamoDB
+    table name) is resolved at construction time so ``datastore()`` takes
+    only the logical resource name.
+    """
 
     @abstractmethod
-    def datastore(self, name: str, table_name: str) -> Datastore:
-        """Get a datastore handle for a named resource backed by a specific table."""
+    def datastore(self, name: str) -> Datastore:
+        """Get a datastore handle for a named resource.
+
+        Args:
+            name: The logical resource name. The provider maps this
+                to a physical identifier internally.
+        """
 
     @abstractmethod
     async def close(self) -> None:

@@ -62,10 +62,12 @@ class DynamoDBDatastoreClient(DatastoreClient):
         session: aioboto3.Session,
         config: DynamoDBDatastoreConfig,
         tracer: CelerityTracer | None = None,
+        resource_ids: dict[str, str] | None = None,
     ) -> None:
         self._session = session
         self._config = config
         self._tracer = tracer
+        self._resource_ids = resource_ids or {}
         self._exit_stack = AsyncExitStack()
         self._client: DynamoDBClient | None = None
 
@@ -87,8 +89,11 @@ class DynamoDBDatastoreClient(DatastoreClient):
             )
         return self._client
 
-    def datastore(self, name: str, table_name: str) -> Datastore:
-        """Get a datastore handle for a named resource backed by a specific table."""
+    def datastore(self, name: str) -> Datastore:
+        """Get a datastore handle for a named resource."""
+        table_name = self._resource_ids.get(name)
+        if not table_name:
+            raise DatastoreError(f"No table name configured for resource {name!r}")
         return DynamoDBDatastore(
             client_provider=self._ensure_client,
             table_name=table_name,

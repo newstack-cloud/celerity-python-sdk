@@ -50,18 +50,21 @@ class DatastoreLayer(CelerityLayer):
         with contextlib.suppress(Exception):
             tracer = await container.resolve(TRACER_TOKEN)
 
-        # One shared client for all datastore resources.
-        client = create_datastore_client(tracer=tracer)
-        self._client = client
-
         config_service = await container.resolve(CONFIG_SERVICE_TOKEN)
         resource_config = config_service.namespace(RESOURCE_CONFIG_NAMESPACE)
 
+        # Resolve all resource name → physical ID mappings first.
+        resource_ids: dict[str, str] = {}
         for resource_name, config_key in datastore_links.items():
-            # The config key resolves to the actual table name.
-            actual_name = await resource_config.get(config_key)
-            table_name = actual_name or resource_name
-            ds_handle = client.datastore(resource_name, table_name=table_name)
+            physical_id = await resource_config.get(config_key)
+            resource_ids[resource_name] = physical_id or resource_name
+
+        # One shared client with the full mapping.
+        client = create_datastore_client(tracer=tracer, resource_ids=resource_ids)
+        self._client = client
+
+        for resource_name in datastore_links:
+            ds_handle = client.datastore(resource_name)
             container.register_value(
                 resource_token("datastore", resource_name),
                 ds_handle,

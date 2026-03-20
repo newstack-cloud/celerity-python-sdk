@@ -21,6 +21,7 @@ def create_datastore_client(
     tracer: CelerityTracer | None = None,
     provider: Platform | None = None,
     deploy_target: str | None = None,
+    resource_ids: dict[str, str] | None = None,
 ) -> DatastoreClient:
     """Create a datastore client for the detected platform.
 
@@ -40,14 +41,18 @@ def create_datastore_client(
         tracer: Optional tracer for instrumenting operations.
         provider: Override platform detection (mainly for testing).
         deploy_target: Override deploy target detection (mainly for testing).
+        resource_ids: Mapping of logical resource name to physical
+            resource identifier (e.g. DynamoDB table name, Firestore
+            collection). Resolved by the layer from the config service
+            before client creation.
     """
     resolved_provider = provider or detect_platform()
 
     if resolved_provider == "aws":
-        return _create_dynamodb_client(config, tracer)
+        return _create_dynamodb_client(config, tracer, resource_ids)
 
     if resolved_provider == "local":
-        return _create_local_client(config, tracer, deploy_target)
+        return _create_local_client(config, tracer, deploy_target, resource_ids)
 
     # Future: "gcp" -> Firestore, "azure" -> CosmosDB
     raise DatastoreError(f"Unsupported datastore provider: {resolved_provider!r}")
@@ -56,6 +61,7 @@ def create_datastore_client(
 def _create_dynamodb_client(
     config: DynamoDBDatastoreConfig | None,
     tracer: CelerityTracer | None,
+    resource_ids: dict[str, str] | None,
 ) -> DatastoreClient:
     import aioboto3
 
@@ -68,20 +74,23 @@ def _create_dynamodb_client(
 
     resolved_config = config or capture_dynamodb_config()
     session = aioboto3.Session()
-    return DynamoDBDatastoreClient(session=session, config=resolved_config, tracer=tracer)
+    return DynamoDBDatastoreClient(
+        session=session, config=resolved_config, tracer=tracer, resource_ids=resource_ids
+    )
 
 
 def _create_local_client(
     config: DynamoDBDatastoreConfig | None,
     tracer: CelerityTracer | None,
     deploy_target: str | None,
+    resource_ids: dict[str, str] | None,
 ) -> DatastoreClient:
     """Select the local emulator based on deploy target."""
     target = (deploy_target or detect_cloud_deploy_target()).lower()
 
     if target in ("aws", "aws-serverless"):
         # DynamoDB Local (v0 default when no deploy target is specified)
-        return _create_dynamodb_client(config, tracer)
+        return _create_dynamodb_client(config, tracer, resource_ids)
 
     # Future:
     # "gcloud" / "gcloud-serverless" -> Firestore emulator
