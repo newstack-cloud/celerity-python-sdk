@@ -58,13 +58,8 @@ def _build_engine_kwargs(
     }
 
     if connection_info.ssl:
-        if connection_info.engine == "postgres":
-            ssl_ctx = ssl_module.create_default_context()
-            ssl_ctx.check_hostname = False
-            ssl_ctx.verify_mode = ssl_module.CERT_NONE
-            kwargs["connect_args"] = {"ssl": ssl_ctx}
-        elif connection_info.engine == "mysql":
-            kwargs["connect_args"] = {"ssl": {"ssl": True}}
+        ssl_ctx = ssl_module.create_default_context()
+        kwargs["connect_args"] = {"ssl": ssl_ctx}
 
     return kwargs
 

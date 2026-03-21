@@ -94,6 +94,8 @@ class TestCreateSqlDatabase:
 
     @patch("celerity.resources.sql_database.factory.create_async_engine")
     def test_ssl_postgres(self, mock_create: MagicMock) -> None:
+        import ssl
+
         mock_create.return_value = MagicMock()
         info = _make_connection_info(engine="postgres", ssl=True)
         auth = SqlPasswordAuth(
@@ -105,10 +107,15 @@ class TestCreateSqlDatabase:
 
         kwargs = mock_create.call_args[1]
         assert "connect_args" in kwargs
-        assert "ssl" in kwargs["connect_args"]
+        ssl_ctx = kwargs["connect_args"]["ssl"]
+        assert isinstance(ssl_ctx, ssl.SSLContext)
+        assert ssl_ctx.check_hostname is True
+        assert ssl_ctx.verify_mode == ssl.CERT_REQUIRED
 
     @patch("celerity.resources.sql_database.factory.create_async_engine")
     def test_ssl_mysql(self, mock_create: MagicMock) -> None:
+        import ssl
+
         mock_create.return_value = MagicMock()
         info = _make_connection_info(engine="mysql", ssl=True)
         auth = SqlPasswordAuth(
@@ -120,7 +127,9 @@ class TestCreateSqlDatabase:
 
         kwargs = mock_create.call_args[1]
         assert "connect_args" in kwargs
-        assert kwargs["connect_args"]["ssl"] == {"ssl": True}
+        ssl_ctx = kwargs["connect_args"]["ssl"]
+        assert isinstance(ssl_ctx, ssl.SSLContext)
+        assert ssl_ctx.check_hostname is True
 
     @patch("celerity.resources.sql_database.factory.create_async_engine")
     def test_no_ssl(self, mock_create: MagicMock) -> None:
