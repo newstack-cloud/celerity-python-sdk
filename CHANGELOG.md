@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/newstack-cloud/celerity-python-sdk/compare/v0.2.0...v0.2.1) (2026-03-21)
+
+
+### Bug Fixes
+
+* add fix to make start_runtime synchronous ([0cc656f](https://github.com/newstack-cloud/celerity-python-sdk/commit/0cc656f1d892d72cd9e4d23317de3d1ee32c16d6))
+
 ## [0.2.0](https://github.com/newstack-cloud/celerity-python-sdk/compare/v0.1.0...v0.2.0) (2026-03-21)
 
 
