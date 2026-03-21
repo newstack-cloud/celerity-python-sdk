@@ -3,10 +3,21 @@
 Dynamically imports ``celerity_runtime_sdk``, loads config from
 ``CELERITY_*`` environment variables, bootstraps the user's module,
 registers handler callbacks, and starts the server.
+
+Event loop model:
+
+``app.setup()`` creates its own asyncio event loop that
+``app.run(block=True)`` later drives with ``run_forever()``.
+The bootstrap coroutine must run on **this** event loop so that
+DI container state, system layers, and handler callbacks all
+share the same loop context. ``start_runtime()`` is therefore
+a regular function: it runs the async bootstrap on the
+Rust-created loop, then hands control to ``app.run()``.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 
@@ -22,21 +33,23 @@ if TYPE_CHECKING:
 logger = logging.getLogger("celerity.runtime")
 
 
-async def start_runtime(*, block: bool = True) -> None:
+def start_runtime(*, block: bool = True) -> None:
     """Start the Celerity runtime in FFI mode.
 
     Lifecycle:
 
     1. Import ``celerity_runtime_sdk`` (PyO3 module)
     2. Create ``CoreRuntimeApplication`` from env config
-    3. Call ``setup()`` to get handler definitions from the blueprint
-    4. Bootstrap the user's ``@module`` -> DI + registry
+    3. Call ``setup()`` — creates a fresh asyncio event loop internally
+    4. Run ``bootstrap_for_runtime()`` on the Rust-created event loop
+       so that DI, layers, and handler callbacks share one loop
     5. Register handler callbacks with the runtime
-    6. Call ``run()``
+    6. Call ``app.run(block)`` — spawns Tokio in a thread, then calls
+       ``event_loop.run_forever()`` to process Python handler callbacks
 
     Args:
-        block: If ``True`` (default), run the event loop forever.
-            Set to ``False`` for testing.
+        block: If ``True`` (default), block on
+            ``event_loop.run_forever()``. Set to ``False`` for testing.
 
     Raises:
         ImportError: If ``celerity_runtime_sdk`` is not installed.
@@ -52,7 +65,11 @@ async def start_runtime(*, block: bool = True) -> None:
     app = RuntimeApp(config)
     app_config = app.setup()
 
-    result = await bootstrap_for_runtime()
+    # app.setup() creates a new asyncio event loop that is
+    # set as the current event loop, we reuse the same event loop
+    # for bootstrapping, especially important for contextvars usage.
+    loop = asyncio.get_event_loop()
+    result = loop.run_until_complete(bootstrap_for_runtime())
 
     _register_http_handlers(app, app_config, result)
     _register_guard_handlers(app, app_config, result)
