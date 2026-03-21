@@ -49,6 +49,7 @@ dev = [
     "types-aiobotocore-s3>=2.15",
     "types-aiobotocore-sqs>=2.15",
     "types-aiobotocore-sns>=2.15",
+    "types-aiobotocore-rds>=2.15",
     "types-redis>=4.6",
     "ruff>=0.8",
     "mypy>=1.13",
