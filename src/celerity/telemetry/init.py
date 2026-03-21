@@ -41,6 +41,9 @@ async def init_telemetry(config: TelemetryConfig) -> None:
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
     from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
+    if TYPE_CHECKING:
+        from opentelemetry.propagators.textmap import TextMapPropagator
+
     # Build resource attributes
     resource = Resource.create(
         {
@@ -51,25 +54,28 @@ async def init_telemetry(config: TelemetryConfig) -> None:
 
     # Configure ID generator for AWS X-Ray compatibility
     platform = os.environ.get("CELERITY_PLATFORM", "")
-    extra_kwargs: dict[str, object] = {}
+    id_generator = None
     if platform.startswith("aws"):
         try:
             from opentelemetry.sdk.extension.aws.trace import AwsXRayIdGenerator
 
-            extra_kwargs["id_generator"] = AwsXRayIdGenerator()
+            id_generator = AwsXRayIdGenerator()
             logger.debug("Using AWS X-Ray ID generator")
         except ImportError:
             logger.debug("AWS X-Ray ID generator not available")
 
     # Set up TracerProvider
-    provider = TracerProvider(resource=resource, **extra_kwargs)
+    if id_generator is not None:
+        provider = TracerProvider(resource=resource, id_generator=id_generator)
+    else:
+        provider = TracerProvider(resource=resource)
     exporter = OTLPSpanExporter(endpoint=config.otlp_endpoint, insecure=True)
     provider.add_span_processor(BatchSpanProcessor(exporter))
     trace.set_tracer_provider(provider)
     _tracer_provider = provider
 
     # Set up composite propagator (W3C + AWS X-Ray)
-    propagators: list[object] = [TraceContextTextMapPropagator()]
+    propagators: list[TextMapPropagator] = [TraceContextTextMapPropagator()]
     try:
         from opentelemetry.propagators.aws import AwsXRayPropagator
 

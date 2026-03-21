@@ -25,7 +25,6 @@ from celerity.types.layer import CelerityLayer
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from celerity.types.container import ServiceContainer
     from celerity.types.context import BaseHandlerContext
     from celerity.types.telemetry import CelerityLogger, CelerityTracer
 
@@ -72,7 +71,8 @@ class TelemetryLayer(CelerityLayer):
         request_logger = self._build_request_logger(context)
         otel_context = self._extract_trace_context(context)
 
-        set_request_logger(request_logger)
+        if request_logger is not None:
+            set_request_logger(request_logger)
         context.logger = request_logger
         try:
             if otel_context:
@@ -88,7 +88,7 @@ class TelemetryLayer(CelerityLayer):
         finally:
             clear_request_logger()
 
-    async def _first_request_init(self, container: ServiceContainer) -> None:
+    async def _first_request_init(self, container: Any) -> None:
         """Complete initialisation on first request."""
         if self._init_task is not None:
             await self._init_task
@@ -110,7 +110,7 @@ class TelemetryLayer(CelerityLayer):
         self._initialized = True
         logger.debug("TelemetryLayer initialised (tracing=%s)", self._config.tracing_enabled)
 
-    async def _refresh_log_level(self, container: ServiceContainer) -> None:
+    async def _refresh_log_level(self, container: Any) -> None:
         """Check ConfigService for dynamic log level changes."""
         if self._root_logger is None:
             return
