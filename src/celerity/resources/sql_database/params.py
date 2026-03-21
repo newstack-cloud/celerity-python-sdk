@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated
 
-from sqlalchemy.ext.asyncio import AsyncEngine  # type: ignore[import-untyped]
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from celerity.resources.sql_database.types import SqlDatabaseCredentials
 

@@ -42,7 +42,7 @@ telemetry = [
     "opentelemetry-propagator-aws-xray>=1.0",
 ]
 dev = [
-    "celerity-sdk[test,runtime,aws,cache,telemetry]",
+    "celerity-sdk[test,runtime,aws,cache,resources-sql,telemetry]",
     "boto3-stubs>=1.34",
     "types-aioboto3>=13.0",
     "types-aiobotocore-dynamodb>=2.15",
