@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import inspect
 import json
-from typing import TYPE_CHECKING, Any, get_type_hints
+from typing import TYPE_CHECKING, Any, get_args, get_origin, get_type_hints
 
+from celerity.decorators.params import Key
 from celerity.types.common import Schema
 from celerity.types.handler import ParamMetadata
 
@@ -29,6 +30,39 @@ _PARAM_TYPE_TO_SCHEMA_KEY: dict[str, str] = {
     "param": "params",
     "headers": "headers",
 }
+
+# Singular param types that auto-derive key from the Python parameter name.
+_AUTO_KEY_TYPES: set[str] = {"param", "header", "cookie", "query_param"}
+
+
+def _transform_key(param_type: str, name: str) -> str:
+    """Transform a Python parameter name into the appropriate request key.
+
+    For ``"header"`` types, converts ``snake_case`` to ``kebab-case``
+    (e.g. ``content_type`` -> ``content-type``). All other types use the
+    parameter name as-is.
+    """
+    if param_type == "header":
+        return name.replace("_", "-")
+    return name
+
+
+def _unwrap_annotated(hint: Any) -> tuple[Any, str | None]:
+    """Unwrap an ``Annotated`` type and extract a ``Key`` marker if present.
+
+    Returns a tuple of ``(inner_hint, explicit_key)``.  If the hint is
+    not ``Annotated``, returns ``(hint, None)``.
+    """
+    import typing
+
+    if get_origin(hint) is typing.Annotated:
+        args = get_args(hint)
+        inner = args[0]
+        for extra in args[1:]:
+            if isinstance(extra, Key):
+                return inner, extra.name
+        return inner, None
+    return hint, None
 
 
 def extract_param_metadata(method: Any) -> list[ParamMetadata]:
@@ -63,14 +97,26 @@ def extract_param_metadata(method: Any) -> list[ParamMetadata]:
         if param.name == "self":
             continue
         hint = hints.get(param.name)
-        if hint is not None and hasattr(hint, "__celerity_param__"):
-            meta = hint.__celerity_param__
-            schema = meta.schema or _resolve_schema_from_args(hint)
+        if hint is None:
+            continue
+
+        # Unwrap Annotated[Param[str], Key("name")] to find the param
+        # type and any explicit Key marker.
+        inner_hint, explicit_key = _unwrap_annotated(hint)
+
+        if hasattr(inner_hint, "__celerity_param__"):
+            meta = inner_hint.__celerity_param__
+            schema = meta.schema or _resolve_schema_from_args(inner_hint)
+            # Explicit Key marker takes precedence, then auto-derive
+            # from the Python parameter name for singular types.
+            key = explicit_key or meta.key
+            if key is None and meta.type in _AUTO_KEY_TYPES:
+                key = _transform_key(meta.type, param.name)
             result.append(
                 ParamMetadata(
                     index=i,
                     type=meta.type,
-                    key=meta.key,
+                    key=key,
                     schema=schema,
                 )
             )
@@ -182,6 +228,12 @@ def _extract_single_param(meta: ParamMetadata, context: BaseHandlerContext) -> A
             return request.headers.get(meta.key) if meta.key else request.headers
         if param_type == "cookies":
             return request.cookies.get(meta.key, "") if meta.key else request.cookies
+        if param_type == "header":
+            return request.headers.get(meta.key) if meta.key else None
+        if param_type == "cookie":
+            return request.cookies.get(meta.key, "") if meta.key else None
+        if param_type == "query_param":
+            return request.query.get(meta.key) if meta.key else None
         if param_type == "auth":
             return request.auth
         if param_type == "token":

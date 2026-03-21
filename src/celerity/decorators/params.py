@@ -149,6 +149,91 @@ class Cookies(_AnnotatedParam[T]):
     _meta = ParamMeta(type="cookies")
 
 
+class Header(_AnnotatedParam[T]):
+    """Extract a single request header by name.
+
+    The key is auto-derived from the Python parameter name, converting
+    underscores to hyphens (``content_type`` -> ``content-type``).
+    Use ``Annotated`` with ``Key`` to override for non-standard names.
+
+    Example::
+
+        from typing import Annotated
+
+        @get("/data")
+        async def get_data(
+            self,
+            content_type: Header[str],
+            api_key: Annotated[Header[str], Key("X-Api-Key")],
+        ) -> HandlerResponse: ...
+    """
+
+    _meta = ParamMeta(type="header")
+
+
+class Cookie(_AnnotatedParam[T]):
+    """Extract a single cookie by name.
+
+    The key is auto-derived from the Python parameter name.
+    Use ``Annotated`` with ``Key`` to override.
+
+    Example::
+
+        @get("/prefs")
+        async def get_prefs(self, session_id: Cookie[str]) -> HandlerResponse: ...
+    """
+
+    _meta = ParamMeta(type="cookie")
+
+
+class QueryParam(_AnnotatedParam[T]):
+    """Extract a single query parameter by name.
+
+    The key is auto-derived from the Python parameter name.
+    Use ``Annotated`` with ``Key`` to override when the query
+    parameter uses a different naming convention.
+
+    Example::
+
+        from typing import Annotated
+
+        @get("/search")
+        async def search(
+            self,
+            page: QueryParam[int],
+            sort_by: Annotated[QueryParam[str], Key("sortBy")],
+        ) -> HandlerResponse: ...
+    """
+
+    _meta = ParamMeta(type="query_param")
+
+
+class Key:
+    """Marker for use with ``Annotated`` to override the extracted key.
+
+    When the request parameter name differs from the Python parameter
+    name (e.g. camelCase API vs snake_case Python), wrap the param type
+    in ``Annotated`` with a ``Key`` marker to specify the exact key.
+
+    Example::
+
+        from typing import Annotated
+
+        @get("/orders/{orderId}")
+        async def get_order(
+            self,
+            order_id: Annotated[Param[str], Key("orderId")],
+            api_key: Annotated[Header[str], Key("X-Api-Key")],
+            sort_by: Annotated[QueryParam[str], Key("sortBy")],
+        ) -> HandlerResponse: ...
+    """
+
+    __slots__ = ("name",)
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
 # -- Non-generic parameter types --
 
 
