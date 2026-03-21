@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/newstack-cloud/celerity-python-sdk/compare/v0.2.1...v0.3.0) (2026-03-21)
+
+
+### Features
+
+* add improvements to dx for param extraction and http response handling ([1dc986d](https://github.com/newstack-cloud/celerity-python-sdk/commit/1dc986d56b29998ca3e8405b641e61d40b6c904e))
+
 ## [0.2.1](https://github.com/newstack-cloud/celerity-python-sdk/compare/v0.2.0...v0.2.1) (2026-03-21)
 
 
