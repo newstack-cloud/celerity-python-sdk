@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import aioboto3
 import pytest
@@ -52,10 +52,17 @@ async def _create_sqs_queue(client: SQSClient, name: str) -> tuple[str, str]:
 
 
 async def _receive_messages(
-    queue_url: str, max_messages: int = 10, wait_seconds: int = 3
+    queue_url: str,
+    min_messages: int = 1,
+    max_messages: int = 10,
+    timeout_seconds: float = 10,
 ) -> list[dict[str, Any]]:
-    """Receive messages from SQS."""
+    """Receive messages from SQS, polling until min_messages collected or timeout."""
+    import time
+
     session = aioboto3.Session()
+    collected: list[dict[str, Any]] = []
+    deadline = time.monotonic() + timeout_seconds
     async with session.client(
         "sqs",
         region_name=REGION,
@@ -63,13 +70,16 @@ async def _receive_messages(
         aws_access_key_id="test",
         aws_secret_access_key="test",
     ) as client:
-        resp = await client.receive_message(
-            QueueUrl=queue_url,
-            MaxNumberOfMessages=max_messages,
-            WaitTimeSeconds=wait_seconds,
-            MessageAttributeNames=["All"],
-        )
-        return cast("list[dict[str, Any]]", resp.get("Messages", []))
+        while len(collected) < min_messages and time.monotonic() < deadline:
+            remaining = max(0.5, min(3.0, deadline - time.monotonic()))
+            resp = await client.receive_message(
+                QueueUrl=queue_url,
+                MaxNumberOfMessages=max_messages,
+                WaitTimeSeconds=int(remaining),
+                MessageAttributeNames=["All"],
+            )
+            collected.extend(resp.get("Messages", []))
+    return collected
 
 
 @pytest.fixture
@@ -160,7 +170,7 @@ class TestPublishBatch:
         assert len(result.successful) == 5
         assert result.failed == []
 
-        messages = await _receive_messages(sqs_url)
+        messages = await _receive_messages(sqs_url, min_messages=5)
         assert len(messages) >= 5
 
     @pytest.mark.asyncio
