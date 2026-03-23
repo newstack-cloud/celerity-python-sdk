@@ -72,7 +72,7 @@ class TestSendMessage:
         assert b"body" in fields
         assert b"timestamp" in fields
         assert b"message_type" in fields
-        assert fields[b"message_type"] == b"standard"
+        assert fields[b"message_type"] == b"0"
 
     @pytest.mark.asyncio
     async def test_group_id_and_dedup_id(

@@ -50,7 +50,7 @@ async def execute_custom_pipeline(
     context = CustomHandlerContext(
         payload=payload,
         metadata=HandlerMetadataStore(handler.custom_metadata),
-        container=container,  # type: ignore[arg-type]
+        container=container,
     )
 
     all_layers = [*system_layers, *module_layers, *handler.layers]

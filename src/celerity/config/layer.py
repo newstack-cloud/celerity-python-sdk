@@ -123,7 +123,7 @@ def _parsed_config_resolve_hook(token: Any, container: Any) -> bool:
 
         async def _factory(ns: Any, model: type = model_type) -> Any:
             data = await ns.get_all()
-            return model.model_validate(data)
+            return model.model_validate(data)  # type: ignore[attr-defined]
 
         container.register(
             parsed_token,

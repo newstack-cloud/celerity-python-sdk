@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from celerity.handlers.param_extractor import resolve_handler_params
 from celerity.handlers.resolve import resolve_handler_instance
@@ -14,6 +14,7 @@ from celerity.types.consumer import EventResult
 from celerity.types.context import ScheduleHandlerContext
 
 if TYPE_CHECKING:
+    from celerity.types.container import ServiceContainer
     from celerity.types.handler import ResolvedHandlerBase
     from celerity.types.schedule import ScheduleEventInput
 
@@ -36,14 +37,14 @@ async def execute_schedule_pipeline(
     Returns:
         An ``EventResult`` indicating success or failure.
     """
-    container = options.get("container")
+    container = cast("ServiceContainer", options.get("container"))
     system_layers: list[Any] = options.get("system_layers", [])
     module_layers: list[Any] = options.get("module_layers", [])
 
     context = ScheduleHandlerContext(
         event=event,
         metadata=HandlerMetadataStore(handler.custom_metadata),
-        container=container,  # type: ignore[arg-type]
+        container=container,
     )
 
     all_layers = [*system_layers, *module_layers, *handler.layers]

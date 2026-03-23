@@ -65,7 +65,7 @@ class S3ObjectStorage(ObjectStorage):
             if self._config.force_path_style:
                 s3_config["addressing_style"] = "path"
             kwargs["config"] = BotoConfig(
-                s3=s3_config or None,
+                s3=s3_config or None,  # type: ignore[arg-type]
                 signature_version="s3v4",
             )
             if self._config.credentials:

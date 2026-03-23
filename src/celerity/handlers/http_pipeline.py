@@ -6,7 +6,7 @@ import dataclasses
 import inspect
 import json
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel
 
@@ -19,6 +19,7 @@ from celerity.types.context import HttpHandlerContext
 from celerity.types.http import HttpResponse
 
 if TYPE_CHECKING:
+    from celerity.types.container import ServiceContainer
     from celerity.types.handler import ResolvedHandlerBase
     from celerity.types.http import HttpRequest
 
@@ -52,7 +53,7 @@ async def execute_http_pipeline(
     Returns:
         The HTTP response.
     """
-    container = options.get("container")
+    container = cast("ServiceContainer", options.get("container"))
     system_layers: list[Any] = options.get("system_layers", [])
     app_layers: list[Any] = options.get("app_layers", [])
     handler_name: str | None = options.get("handler_name")
@@ -65,7 +66,7 @@ async def execute_http_pipeline(
                 **({"handler_name": handler_name} if handler_name else {}),
             }
         ),
-        container=container,  # type: ignore[arg-type]
+        container=container,
     )
 
     all_layers = [*system_layers, *app_layers, *handler.layers]
