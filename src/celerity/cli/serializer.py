@@ -380,7 +380,7 @@ def _serialize_guard(
 
     if guard.guard_type == "class":
         class_name = guard.class_name or ""
-        method_name = "validate"
+        method_name = "check"
         return GuardHandlerEntry(
             resource_name=derive_class_resource_name(class_name, method_name),
             guard_name=guard.guard_name,
