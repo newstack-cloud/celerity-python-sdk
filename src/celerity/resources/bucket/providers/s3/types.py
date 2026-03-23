@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from celerity.resources._common import AwsCredentials
 
 
 @dataclass(frozen=True)
@@ -16,3 +20,4 @@ class S3ObjectStorageConfig:
     region: str | None = None
     endpoint_url: str | None = None
     force_path_style: bool = False
+    credentials: AwsCredentials | None = None

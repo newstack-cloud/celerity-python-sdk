@@ -59,10 +59,18 @@ class S3ObjectStorage(ObjectStorage):
                 kwargs["endpoint_url"] = self._config.endpoint_url
             if self._config.region:
                 kwargs["region_name"] = self._config.region
-            if self._config.force_path_style:
-                from botocore.config import Config as BotoConfig
+            from botocore.config import Config as BotoConfig
 
-                kwargs["config"] = BotoConfig(s3={"addressing_style": "path"})
+            s3_config: dict[str, Any] = {}
+            if self._config.force_path_style:
+                s3_config["addressing_style"] = "path"
+            kwargs["config"] = BotoConfig(
+                s3=s3_config or None,
+                signature_version="s3v4",
+            )
+            if self._config.credentials:
+                kwargs["aws_access_key_id"] = self._config.credentials.access_key_id
+                kwargs["aws_secret_access_key"] = self._config.credentials.secret_access_key
             self._client = await self._exit_stack.enter_async_context(
                 self._session.client("s3", **kwargs)
             )

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 
+from celerity.resources._common import capture_aws_credentials
 from celerity.resources.bucket.providers.s3.types import S3ObjectStorageConfig
 
 
@@ -14,9 +15,11 @@ def capture_s3_config() -> S3ObjectStorageConfig:
 
     Environment variables::
 
-        AWS_REGION / AWS_DEFAULT_REGION          -- AWS region (default "us-east-1")
-        CELERITY_AWS_S3_ENDPOINT / AWS_ENDPOINT_URL -- endpoint override
-        CELERITY_AWS_S3_PATH_STYLE               -- force path style ("true"/"false")
+        AWS_REGION / AWS_DEFAULT_REGION                        -- AWS region (default "us-east-1")
+        CELERITY_AWS_S3_ENDPOINT / AWS_ENDPOINT_URL            -- endpoint override
+        CELERITY_AWS_S3_PATH_STYLE                             -- force path style ("true"/"false")
+        CELERITY_LOCAL_BUCKET_ACCESS_KEY / AWS_ACCESS_KEY_ID   -- access key
+        CELERITY_LOCAL_BUCKET_SECRET_KEY / AWS_SECRET_ACCESS_KEY -- secret key
 
     In local environments (``CELERITY_RUNTIME`` not set), ``force_path_style``
     is always ``True`` for MinIO compatibility.
@@ -36,4 +39,7 @@ def capture_s3_config() -> S3ObjectStorageConfig:
         region=region,
         endpoint_url=endpoint_url,
         force_path_style=force_path_style,
+        credentials=capture_aws_credentials(
+            "CELERITY_LOCAL_BUCKET_ACCESS_KEY", "CELERITY_LOCAL_BUCKET_SECRET_KEY"
+        ),
     )

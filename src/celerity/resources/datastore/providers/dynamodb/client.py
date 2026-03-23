@@ -79,6 +79,9 @@ class DynamoDBDatastoreClient(DatastoreClient):
                 kwargs["region_name"] = self._config.region
             if self._config.endpoint_url:
                 kwargs["endpoint_url"] = self._config.endpoint_url
+            if self._config.credentials:
+                kwargs["aws_access_key_id"] = self._config.credentials.access_key_id
+                kwargs["aws_secret_access_key"] = self._config.credentials.secret_access_key
             self._client = await self._exit_stack.enter_async_context(
                 self._session.client("dynamodb", **kwargs)
             )
