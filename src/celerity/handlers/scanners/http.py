@@ -55,7 +55,6 @@ async def scan_http_handlers(
             if ctrl_meta is None:
                 continue
 
-            instance = await container.resolve(controller_class)
             prefix = ctrl_meta.get("prefix", "") if isinstance(ctrl_meta, dict) else ""
 
             for method_name in get_method_names(controller_class):
@@ -82,8 +81,7 @@ async def scan_http_handlers(
                     method_name,
                 )
                 handler = ResolvedHttpHandler(
-                    handler_fn=getattr(instance, method_name),
-                    handler_instance=instance,
+                    handler_fn=getattr(controller_class, method_name),
                     controller_class=controller_class,
                     path=full_path,
                     method=http_method,
@@ -138,18 +136,18 @@ async def scan_http_guards(
                 continue
 
             logger.debug("scan guard: %s (name=%s)", guard_entry.__name__, guard_name)
-            instance = await container.resolve(guard_entry)
-            validate_fn = getattr(instance, "validate", None)
+            validate_fn = (
+                getattr(guard_entry, "validate", None)
+                or getattr(guard_entry, "check", None)
+                or getattr(guard_entry, "can_activate", None)
+            )
             if validate_fn is None:
                 continue
 
             resolved = ResolvedGuard(
                 name=guard_name,
                 handler_fn=validate_fn,
-                handler_instance=instance,
                 guard_class=guard_entry,
-                param_metadata=extract_param_metadata(
-                    guard_entry.validate  # type: ignore[attr-defined]
-                ),
+                param_metadata=extract_param_metadata(validate_fn),
             )
             registry.register_guard(resolved)

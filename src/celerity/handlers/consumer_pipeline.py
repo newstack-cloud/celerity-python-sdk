@@ -7,6 +7,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from celerity.handlers.param_extractor import resolve_handler_params
+from celerity.handlers.resolve import resolve_handler_instance
 from celerity.layers.pipeline import run_layer_pipeline
 from celerity.metadata.store import HandlerMetadataStore
 from celerity.types.consumer import EventResult
@@ -51,6 +52,8 @@ async def execute_consumer_pipeline(
     )
 
     async def core_handler() -> EventResult:
+        if not handler.is_function_handler:
+            await resolve_handler_instance(handler, container)
         params = resolve_handler_params(handler, context)
         result = handler.handler_fn(*params) if params else handler.handler_fn()
         if inspect.isawaitable(result):

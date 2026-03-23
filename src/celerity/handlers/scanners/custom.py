@@ -37,8 +37,6 @@ async def scan_custom_handlers(
     """
     for node in graph.values():
         for controller_class in node.controllers:
-            instance = await container.resolve(controller_class)
-
             for method_name in get_method_names(controller_class):
                 method_meta = get_method_metadata(controller_class, method_name)
                 invoke_meta = method_meta.get(INVOKE)
@@ -52,8 +50,7 @@ async def scan_custom_handlers(
                     method_name,
                 )
                 handler = ResolvedCustomHandler(
-                    handler_fn=getattr(instance, method_name),
-                    handler_instance=instance,
+                    handler_fn=getattr(controller_class, method_name),
                     controller_class=controller_class,
                     name=invoke_meta.get("name", method_name),
                     layers=collect_layers(controller_class, method_meta),

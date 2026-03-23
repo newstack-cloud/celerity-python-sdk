@@ -41,7 +41,6 @@ async def scan_consumer_handlers(
             if consumer_meta is None:
                 continue
 
-            instance = await container.resolve(controller_class)
             source = consumer_meta.get("source", "") if isinstance(consumer_meta, dict) else ""
 
             for method_name in get_method_names(controller_class):
@@ -57,8 +56,7 @@ async def scan_consumer_handlers(
                     "scan: tag=%s (%s.%s)", handler_tag, controller_class.__name__, method_name
                 )
                 handler = ResolvedConsumerHandler(
-                    handler_fn=getattr(instance, method_name),
-                    handler_instance=instance,
+                    handler_fn=getattr(controller_class, method_name),
                     controller_class=controller_class,
                     handler_tag=handler_tag,
                     layers=collect_layers(controller_class, method_meta),

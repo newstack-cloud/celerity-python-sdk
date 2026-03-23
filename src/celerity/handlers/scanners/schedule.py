@@ -40,8 +40,6 @@ async def scan_schedule_handlers(
     """
     for node in graph.values():
         for controller_class in node.controllers:
-            instance = await container.resolve(controller_class)
-
             for method_name in get_method_names(controller_class):
                 method_meta = get_method_metadata(controller_class, method_name)
                 schedule_meta = method_meta.get(SCHEDULE_HANDLER)
@@ -56,8 +54,7 @@ async def scan_schedule_handlers(
                     "scan: tag=%s (%s.%s)", handler_tag, controller_class.__name__, method_name
                 )
                 handler = ResolvedScheduleHandler(
-                    handler_fn=getattr(instance, method_name),
-                    handler_instance=instance,
+                    handler_fn=getattr(controller_class, method_name),
                     controller_class=controller_class,
                     handler_tag=handler_tag,
                     layers=collect_layers(controller_class, method_meta),

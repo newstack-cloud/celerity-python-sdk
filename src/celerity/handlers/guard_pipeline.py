@@ -128,12 +128,14 @@ async def _invoke_class_guard(
 ) -> Any:
     """Invoke a class-based guard (``@guard`` decorator).
 
-    The scanner stores ``handler_fn`` as a bound method on the resolved
-    instance, so ``self`` is already captured. Decorated parameters are
-    filled from their annotation type; undecorated parameters receive the
-    full ``GuardHandlerContext``.
+    The instance is lazily resolved on first invocation. The handler_fn
+    is rebound as a method on the instance so ``self`` is available.
+    Decorated parameters are filled from their annotation type;
+    undecorated parameters receive the full ``GuardHandlerContext``.
     """
     from celerity.types.context import GuardHandlerContext
+
+    instance = await _resolve_guard_instance(guard, options.container)
 
     guard_context = GuardHandlerContext(
         token=guard_input.token,
@@ -143,8 +145,10 @@ async def _invoke_class_guard(
         container=options.container,
     )
 
-    # handler_fn is a bound method — inspect its non-self parameters.
-    sig = inspect.signature(guard.handler_fn)
+    # Get the bound method on the resolved instance.
+    handler_fn = getattr(instance, guard.handler_fn.__name__)
+
+    sig = inspect.signature(handler_fn)
     params = [p for p in sig.parameters.values() if p.name != "self"]
     decorated_indices = {m.index for m in guard.param_metadata}
 
@@ -161,7 +165,7 @@ async def _invoke_class_guard(
         if i not in decorated_indices:
             args[i] = guard_context
 
-    result = guard.handler_fn(*args)
+    result = handler_fn(*args)
     if inspect.isawaitable(result):
         result = await result
     return result

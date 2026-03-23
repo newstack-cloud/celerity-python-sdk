@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from celerity.errors.http_exception import HttpError
 from celerity.handlers.param_extractor import resolve_handler_params
+from celerity.handlers.resolve import resolve_handler_instance
 from celerity.layers.pipeline import run_layer_pipeline
 from celerity.metadata.store import HandlerMetadataStore
 from celerity.types.context import HttpHandlerContext
@@ -73,6 +74,8 @@ async def execute_http_pipeline(
     http_method = getattr(handler, "method", None)
 
     async def core_handler() -> HttpResponse:
+        if not handler.is_function_handler:
+            await resolve_handler_instance(handler, container)
         params = resolve_handler_params(handler, context)
         if handler.is_function_handler:
             result = handler.handler_fn(request, context, *params)
@@ -93,9 +96,12 @@ async def execute_http_pipeline(
         return response
     except HttpError as exc:
         logger.debug("HttpError %d: %s", exc.status_code, exc.message)
+        error_body: dict[str, Any] = {"message": exc.message}
+        if exc.details is not None:
+            error_body["details"] = exc.details
         return HttpResponse(
             status=exc.status_code,
-            body=json.dumps({"message": exc.message}),
+            body=json.dumps(error_body),
             headers={"content-type": "application/json"},
         )
     except Exception:
