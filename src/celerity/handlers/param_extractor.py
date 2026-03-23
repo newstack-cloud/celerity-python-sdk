@@ -21,6 +21,7 @@ _VALIDATED_METADATA_KEYS: dict[str, str] = {
     "query": "validated_query",
     "param": "validated_params",
     "headers": "validated_headers",
+    "messageBody": "validated_message_body",
 }
 
 # Maps param types to their validation schema dict keys.
@@ -29,6 +30,7 @@ _PARAM_TYPE_TO_SCHEMA_KEY: dict[str, str] = {
     "query": "query",
     "param": "params",
     "headers": "headers",
+    "messageBody": "ws_message_body",
 }
 
 # Singular param types that auto-derive key from the Python parameter name.
@@ -93,11 +95,15 @@ def extract_param_metadata(method: Any) -> list[ParamMetadata]:
     params = list(sig.parameters.values())
     result: list[ParamMetadata] = []
 
-    for i, param in enumerate(params):
+    # Use a separate counter that excludes ``self`` so that indices
+    # match the bound method's signature at invocation time.
+    param_index = 0
+    for param in params:
         if param.name == "self":
             continue
         hint = hints.get(param.name)
         if hint is None:
+            param_index += 1
             continue
 
         # Unwrap Annotated[Param[str], Key("name")] to find the param
@@ -114,12 +120,13 @@ def extract_param_metadata(method: Any) -> list[ParamMetadata]:
                 key = _transform_key(meta.type, param.name)
             result.append(
                 ParamMetadata(
-                    index=i,
+                    index=param_index,
                     type=meta.type,
                     key=key,
                     schema=schema,
                 )
             )
+        param_index += 1
 
     return result
 
@@ -251,6 +258,9 @@ def _extract_single_param(meta: ParamMetadata, context: BaseHandlerContext) -> A
         if param_type == "connectionId":
             return msg.connection_id
         if param_type == "messageBody":
+            validated = context.metadata.get("validated_message_body")
+            if validated is not None:
+                return validated
             return msg.json_body
         if param_type == "messageId":
             return msg.message_id
