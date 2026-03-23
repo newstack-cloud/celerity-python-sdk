@@ -132,7 +132,7 @@ class TestParamsValidation:
         layer = ValidationLayer({"params": StrictParams})
         ctx = _make_http_context(path_params={"order_id": "not-a-number"})
 
-        with pytest.raises(BadRequestError, match="Params validation failed"):
+        with pytest.raises(BadRequestError, match="Path params validation failed"):
             await layer.handle(ctx, _noop)
 
 
