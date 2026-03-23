@@ -52,6 +52,7 @@ class Container(ServiceContainer):
         self._resolving: set[Any] = set()
         self._close_stack: list[tuple[Any, Callable[[], Any]]] = []
         self._tracked: set[Any] = set()
+        self._resolve_hooks: list[Callable[[Any, Container], bool]] = []
 
     def register(self, token: Any, provider: Provider) -> None:
         """Register a provider for a token.
@@ -73,6 +74,15 @@ class Container(ServiceContainer):
         """
         logger.debug("register %s (class)", target.__name__)
         self._providers[target] = ClassProvider(use_class=target)
+
+    def add_resolve_hook(self, hook: Callable[[Any, Container], bool]) -> None:
+        """Register a hook called when a token has no provider.
+
+        The hook receives ``(token, container)`` and should return ``True``
+        if it registered a provider for the token (so resolution can retry),
+        or ``False`` to let the container raise as normal.
+        """
+        self._resolve_hooks.append(hook)
 
     def register_value(self, token: Any, value: Any) -> None:
         """Register a pre-built value.
@@ -117,12 +127,18 @@ class Container(ServiceContainer):
             if provider is None:
                 if isinstance(token, type):
                     return await self._construct_class(token)
-                raise RuntimeError(
-                    f"No provider registered for {_token_str(token)}.\n"
-                    "Ensure the module providing it is included in your "
-                    "root module's imports, or register a provider for it "
-                    "directly."
-                )
+                # Try resolve hooks (e.g. parsed config registration).
+                for hook in self._resolve_hooks:
+                    if hook(token, self):
+                        provider = self._providers.get(token)
+                        break
+                if provider is None:
+                    raise RuntimeError(
+                        f"No provider registered for {_token_str(token)}.\n"
+                        "Ensure the module providing it is included in your "
+                        "root module's imports, or register a provider for it "
+                        "directly."
+                    )
 
             instance = await self._create_from_provider(provider)
             self._instances[token] = instance

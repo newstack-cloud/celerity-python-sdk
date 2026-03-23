@@ -60,12 +60,21 @@ class _AnnotatedParam[T]:
     inner type argument. The runtime scanner reads
     ``__celerity_param__`` to determine injection behaviour.
 
+    When used without subscripting (e.g. ``messages: Messages``),
+    ``__init_subclass__`` ensures ``__celerity_param__`` is still set
+    so the scanner can detect it.
+
     Schema and key functionality is resolved at the scanner level from
     the inner type argument, not from the annotation itself.
     """
 
     _meta: ParamMeta
     __celerity_param__: ParamMeta
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if hasattr(cls, "_meta"):
+            cls.__celerity_param__ = cls._meta
 
     def __class_getitem__(cls, item: Any) -> type:
         if not hasattr(cls, "_meta"):

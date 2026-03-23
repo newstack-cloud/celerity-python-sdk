@@ -9,6 +9,41 @@ from celerity.decorators.injectable import _InjectMarker
 from celerity.metadata.keys import INJECT, get_metadata
 from celerity.resources._tokens import is_resource_marker, resolve_marker_token
 
+# Registry of (namespace_token, model_type) pairs discovered during
+# dependency token extraction.  The config layer reads this after
+# bootstrap to register FactoryProviders that parse each namespace
+# into the requested model.
+pending_parsed_configs: list[tuple[str, type]] = []
+
+
+def resolve_resource_token(base_type: type, marker: object) -> str | None:
+    """Resolve a DI token from an ``Annotated`` resource marker.
+
+    For ``ConfigParam`` markers where the base type is a Pydantic model
+    (has ``model_validate``), produces a parsed-config token and records
+    the ``(namespace_token, model_type)`` pair in
+    ``pending_parsed_configs`` so the config layer can register a factory.
+
+    For all other resource markers, delegates to ``resolve_marker_token``.
+
+    Returns:
+        The DI token string, or ``None`` if the marker is not recognised.
+    """
+    marker_token = resolve_marker_token(marker)
+    if marker_token is None:
+        return None
+
+    if (
+        getattr(marker, "resource_type", None) == "config"
+        and isinstance(base_type, type)
+        and hasattr(base_type, "model_validate")
+    ):
+        parsed_token = f"{marker_token}:parsed:{base_type.__qualname__}"
+        pending_parsed_configs.append((marker_token, base_type))
+        return parsed_token
+
+    return marker_token
+
 
 def get_class_dependency_tokens(target: type) -> list[Any]:
     """Extract constructor dependency tokens from a class's type hints.
@@ -81,9 +116,9 @@ def get_class_dependency_tokens(target: type) -> list[Any]:
                 None,
             )
             if resource_marker is not None:
-                marker_token = resolve_marker_token(resource_marker)
-                if marker_token is not None:
-                    tokens.append(marker_token)
+                token = resolve_resource_token(args[0], resource_marker)
+                if token is not None:
+                    tokens.append(token)
                     continue
 
             # Fall back to the base type.
