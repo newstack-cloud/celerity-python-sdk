@@ -45,7 +45,7 @@ def create_queue_client(
         return _create_sqs_client(config, tracer, resource_ids)
 
     if resolved_provider == "local":
-        return _create_redis_client(tracer)
+        return _create_redis_client(tracer, resource_ids)
 
     # Future: "gcp" -> Pub/Sub, "azure" -> Service Bus
     raise QueueError(f"Unsupported queue provider: {resolved_provider!r}")
@@ -73,6 +73,7 @@ def _create_sqs_client(
 
 def _create_redis_client(
     tracer: CelerityTracer | None,
+    resource_ids: dict[str, str] | None = None,
 ) -> QueueClient:
     import os
 
@@ -84,4 +85,4 @@ def _create_redis_client(
     url = os.environ.get("CELERITY_REDIS_ENDPOINT", "redis://localhost:6379")
     config = RedisQueueConfig(url=url)
     client: Redis[bytes] = Redis.from_url(url, decode_responses=False)
-    return RedisQueueClient(client=client, config=config, tracer=tracer)
+    return RedisQueueClient(client=client, config=config, tracer=tracer, resource_ids=resource_ids)

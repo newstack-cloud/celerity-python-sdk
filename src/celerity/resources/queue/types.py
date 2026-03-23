@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from celerity.resources.serialise import MessageBody
 
 
 class QueueClient(ABC):
@@ -29,12 +33,17 @@ class QueueClient(ABC):
 
 
 class Queue(ABC):
-    """Per-queue handle for sending messages."""
+    """Per-queue handle for sending messages.
+
+    The ``body`` argument accepts a plain string, a dict, a dataclass,
+    a Pydantic model, or any JSON-serializable value.  Non-string values
+    are automatically serialized to a JSON string before being sent.
+    """
 
     @abstractmethod
     async def send_message(
         self,
-        body: str,
+        body: MessageBody,
         options: SendMessageOptions | None = None,
     ) -> str:
         """Send a single message to the queue.
@@ -70,7 +79,7 @@ class BatchSendEntry:
     """A single entry in a batch send request."""
 
     id: str
-    body: str
+    body: MessageBody
     group_id: str | None = None
     deduplication_id: str | None = None
     delay_seconds: int | None = None

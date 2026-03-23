@@ -17,6 +17,7 @@ from celerity.resources.queue.types import (
     QueueClient,
     SendMessageOptions,
 )
+from celerity.resources.serialise import MessageBody
 
 __all__ = [
     "DEFAULT_QUEUE_TOKEN",
@@ -24,6 +25,7 @@ __all__ = [
     "BatchSendFailure",
     "BatchSendResult",
     "BatchSendSuccess",
+    "MessageBody",
     "Queue",
     "QueueClient",
     "QueueError",

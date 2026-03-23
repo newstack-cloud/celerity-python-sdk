@@ -6,6 +6,7 @@ import logging
 from contextlib import AsyncExitStack
 from typing import TYPE_CHECKING, Any
 
+from celerity.resources.serialise import MessageBody, serialise_body
 from celerity.resources.topic.errors import TopicError
 from celerity.resources.topic.types import (
     BatchPublishEntry,
@@ -56,6 +57,9 @@ class SNSTopicClient(TopicClient):
                 kwargs["region_name"] = self._config.region
             if self._config.endpoint_url:
                 kwargs["endpoint_url"] = self._config.endpoint_url
+            if self._config.credentials:
+                kwargs["aws_access_key_id"] = self._config.credentials.access_key_id
+                kwargs["aws_secret_access_key"] = self._config.credentials.secret_access_key
             self._client = await self._exit_stack.enter_async_context(
                 self._session.client("sns", **kwargs)
             )
@@ -108,12 +112,13 @@ class SNSTopic(Topic):
 
     async def publish(
         self,
-        body: str,
+        body: MessageBody,
         options: PublishOptions | None = None,
     ) -> str:
+        serialised = serialise_body(body)
         result: str = await self._traced(
             "celerity.topic.publish",
-            lambda: self._publish(body, options),
+            lambda: self._publish(serialised, options),
             attributes={"topic.arn": self._topic_arn},
         )
         return result
@@ -212,7 +217,7 @@ def _build_batch_entry(entry: BatchPublishEntry) -> dict[str, Any]:
     """Convert a BatchPublishEntry to an SNS PublishBatchRequestEntry."""
     item: dict[str, Any] = {
         "Id": entry.id,
-        "Message": entry.body,
+        "Message": serialise_body(entry.body),
     }
     if entry.subject is not None:
         item["Subject"] = entry.subject

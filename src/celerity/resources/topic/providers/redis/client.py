@@ -7,6 +7,7 @@ import logging
 import uuid
 from typing import TYPE_CHECKING, Any
 
+from celerity.resources.serialise import MessageBody, serialise_body
 from celerity.resources.topic.errors import TopicError
 from celerity.resources.topic.types import (
     BatchPublishEntry,
@@ -40,13 +41,16 @@ class RedisTopicClient(TopicClient):
         client: Redis[bytes],
         config: RedisTopicConfig,
         tracer: CelerityTracer | None = None,
+        resource_ids: dict[str, str] | None = None,
     ) -> None:
         self._client = client
         self._config = config
         self._tracer = tracer
+        self._resource_ids = resource_ids or {}
 
     def topic(self, name: str) -> Topic:
-        channel = f"celerity:topic:channel:{name}"
+        actual_name = self._resource_ids.get(name, name)
+        channel = f"celerity:topic:channel:{actual_name}"
         return RedisTopic(
             client=self._client,
             channel=channel,
@@ -102,12 +106,13 @@ class RedisTopic(Topic):
 
     async def publish(
         self,
-        body: str,
+        body: MessageBody,
         options: PublishOptions | None = None,
     ) -> str:
+        serialised = serialise_body(body)
         result: str = await self._traced(
             "celerity.topic.publish",
-            lambda: self._publish(body, options),
+            lambda: self._publish(serialised, options),
             attributes={"topic.channel": self._channel},
         )
         return result
@@ -156,7 +161,7 @@ class RedisTopic(Topic):
                     subject=entry.subject,
                     attributes=entry.attributes,
                 )
-                envelope = _build_envelope(entry.body, message_id, opts)
+                envelope = _build_envelope(serialise_body(entry.body), message_id, opts)
                 pipe.publish(self._channel, json.dumps(envelope))
             await pipe.execute()
         except Exception as exc:

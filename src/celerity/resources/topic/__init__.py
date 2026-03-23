@@ -1,5 +1,6 @@
 """Topic resource package."""
 
+from celerity.resources.serialise import MessageBody
 from celerity.resources.topic.errors import TopicError
 from celerity.resources.topic.params import (
     DEFAULT_TOPIC_TOKEN,
@@ -24,6 +25,7 @@ __all__ = [
     "BatchPublishFailure",
     "BatchPublishResult",
     "BatchPublishSuccess",
+    "MessageBody",
     "PublishOptions",
     "Topic",
     "TopicClient",

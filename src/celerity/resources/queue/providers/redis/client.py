@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from celerity.resources.queue.errors import QueueError
+from celerity.resources.queue.providers.redis.types import RedisMessageType
 from celerity.resources.queue.types import (
     BatchSendEntry,
     BatchSendResult,
@@ -16,6 +17,7 @@ from celerity.resources.queue.types import (
     QueueClient,
     SendMessageOptions,
 )
+from celerity.resources.serialise import MessageBody, serialise_body
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -43,13 +45,16 @@ class RedisQueueClient(QueueClient):
         client: Redis[bytes],
         config: RedisQueueConfig,
         tracer: CelerityTracer | None = None,
+        resource_ids: dict[str, str] | None = None,
     ) -> None:
         self._client = client
         self._config = config
         self._tracer = tracer
+        self._resource_ids = resource_ids or {}
 
     def queue(self, name: str) -> Queue:
-        stream_key = f"celerity:queue:{name}"
+        actual_name = self._resource_ids.get(name, name)
+        stream_key = f"celerity:queue:{actual_name}"
         return RedisQueue(
             client=self._client,
             stream_key=stream_key,
@@ -93,12 +98,13 @@ class RedisQueue(Queue):
 
     async def send_message(
         self,
-        body: str,
+        body: MessageBody,
         options: SendMessageOptions | None = None,
     ) -> str:
+        serialised = serialise_body(body)
         result: str = await self._traced(
             "celerity.queue.send_message",
-            lambda: self._send_message(body, options),
+            lambda: self._send_message(serialised, options),
             attributes={"queue.stream_key": self._stream_key},
         )
         return result
@@ -144,7 +150,7 @@ class RedisQueue(Queue):
                     delay_seconds=entry.delay_seconds,
                     attributes=entry.attributes,
                 )
-                fields = _build_stream_fields(entry.body, opts)
+                fields = _build_stream_fields(serialise_body(entry.body), opts)
                 pipe.xadd(self._stream_key, fields)
             results = await pipe.execute()
         except Exception as exc:
@@ -173,8 +179,8 @@ def _build_stream_fields(
     """
     fields: dict[str, str] = {
         "body": body,
-        "timestamp": datetime.now(tz=UTC).isoformat(),
-        "message_type": "standard",
+        "timestamp": str(int(datetime.now(tz=UTC).timestamp())),
+        "message_type": str(RedisMessageType.TEXT.value),
     }
     if options:
         if options.group_id is not None:

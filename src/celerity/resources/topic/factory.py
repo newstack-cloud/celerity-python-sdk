@@ -44,7 +44,7 @@ def create_topic_client(
         return _create_sns_client(config, tracer, resource_ids)
 
     if resolved_provider == "local":
-        return _create_redis_client(tracer)
+        return _create_redis_client(tracer, resource_ids)
 
     # Future: "gcp" -> Pub/Sub, "azure" -> Service Bus Topics
     raise TopicError(f"Unsupported topic provider: {resolved_provider!r}")
@@ -72,6 +72,7 @@ def _create_sns_client(
 
 def _create_redis_client(
     tracer: CelerityTracer | None,
+    resource_ids: dict[str, str] | None = None,
 ) -> TopicClient:
     import os
 
@@ -83,4 +84,4 @@ def _create_redis_client(
     url = os.environ.get("CELERITY_REDIS_ENDPOINT", "redis://localhost:6379")
     config = RedisTopicConfig(url=url)
     client: Redis[bytes] = Redis.from_url(url, decode_responses=False)
-    return RedisTopicClient(client=client, config=config, tracer=tracer)
+    return RedisTopicClient(client=client, config=config, tracer=tracer, resource_ids=resource_ids)

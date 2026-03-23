@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from celerity.resources.serialise import MessageBody
 
 
 class TopicClient(ABC):
@@ -29,12 +33,17 @@ class TopicClient(ABC):
 
 
 class Topic(ABC):
-    """Per-resource topic handle for publishing messages."""
+    """Per-resource topic handle for publishing messages.
+
+    The ``body`` argument accepts a plain string, a dict, a dataclass,
+    a Pydantic model, or any JSON-serializable value.  Non-string values
+    are automatically serialized to a JSON string before being sent.
+    """
 
     @abstractmethod
     async def publish(
         self,
-        body: str,
+        body: MessageBody,
         options: PublishOptions | None = None,
     ) -> str:
         """Publish a single message to the topic.
@@ -69,7 +78,7 @@ class BatchPublishEntry:
     """A single entry in a batch publish request."""
 
     id: str
-    body: str
+    body: MessageBody
     group_id: str | None = None
     deduplication_id: str | None = None
     subject: str | None = None

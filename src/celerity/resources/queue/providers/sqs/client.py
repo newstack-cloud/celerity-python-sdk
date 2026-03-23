@@ -16,6 +16,7 @@ from celerity.resources.queue.types import (
     QueueClient,
     SendMessageOptions,
 )
+from celerity.resources.serialise import MessageBody, serialise_body
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -56,6 +57,9 @@ class SQSQueueClient(QueueClient):
                 kwargs["region_name"] = self._config.region
             if self._config.endpoint_url:
                 kwargs["endpoint_url"] = self._config.endpoint_url
+            if self._config.credentials:
+                kwargs["aws_access_key_id"] = self._config.credentials.access_key_id
+                kwargs["aws_secret_access_key"] = self._config.credentials.secret_access_key
             self._client = await self._exit_stack.enter_async_context(
                 self._session.client("sqs", **kwargs)
             )
@@ -108,12 +112,13 @@ class SQSQueue(Queue):
 
     async def send_message(
         self,
-        body: str,
+        body: MessageBody,
         options: SendMessageOptions | None = None,
     ) -> str:
+        serialised = serialise_body(body)
         result: str = await self._traced(
             "celerity.queue.send_message",
-            lambda: self._send_message(body, options),
+            lambda: self._send_message(serialised, options),
             attributes={"queue.url": self._queue_url},
         )
         return result
@@ -212,7 +217,7 @@ def _build_batch_entry(entry: BatchSendEntry) -> dict[str, Any]:
     """Convert a BatchSendEntry to an SQS SendMessageBatchRequestEntry."""
     item: dict[str, Any] = {
         "Id": entry.id,
-        "MessageBody": entry.body,
+        "MessageBody": serialise_body(entry.body),
     }
     if entry.group_id is not None:
         item["MessageGroupId"] = entry.group_id
