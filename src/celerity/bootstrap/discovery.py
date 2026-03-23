@@ -44,12 +44,18 @@ def discover_module(module_path: str | None = None) -> type:
 
     path = Path(resolved)
 
-    # Ensure the parent directory is importable.
-    parent = str(path.parent.resolve())
-    if parent not in sys.path:
-        sys.path.insert(0, parent)
+    # Determine the importable module name and the directory to add to
+    # sys.path. Non-package directories (those without __init__.py) at
+    # the start of the path are treated as filesystem prefixes, not part
+    # of the Python module hierarchy.
+    #
+    # Example: "app/src/app_module.py" where app/ has no __init__.py
+    #   → sys.path gets "app/", module name is "src.app_module"
+    import_root, module_name = _resolve_import(path)
+    root = str(import_root.resolve())
+    if root not in sys.path:
+        sys.path.insert(0, root)
 
-    module_name = _path_to_module_name(path)
     imported = importlib.import_module(module_name)
 
     for name in dir(imported):
@@ -62,6 +68,43 @@ def discover_module(module_path: str | None = None) -> type:
     raise RuntimeError(msg)
 
 
-def _path_to_module_name(path: Path) -> str:
-    """Convert a file path to a Python module name."""
-    return path.with_suffix("").name
+def _resolve_import(path: Path) -> tuple[Path, str]:
+    """Determine the sys.path root and dotted module name for a file path.
+
+    Walks the path components from the start, skipping non-package
+    directories (those without ``__init__.py``) that act as filesystem
+    prefixes (e.g. bind-mount points like ``app/``).
+
+    The first directory that contains ``__init__.py`` is treated as the
+    top-level Python package. Everything from that point onward forms
+    the dotted module name, and the directory *containing* that package
+    is the import root to add to ``sys.path``.
+
+    Examples::
+
+        # "app/src/app_module.py" where app/ has no __init__.py, src/ does
+        # → import root = "app/", module name = "src.app_module"
+
+        # "src/app_module.py" where src/ has __init__.py
+        # → import root = ".", module name = "src.app_module"
+
+        # "app_module.py" (no package)
+        # → import root = ".", module name = "app_module"
+
+    Returns:
+        A tuple of (import_root, module_name).
+    """
+    parts = path.with_suffix("").parts
+
+    # Find the first directory that is a Python package.
+    for i in range(len(parts) - 1):
+        candidate = Path(*parts[: i + 1])
+        if (candidate / "__init__.py").exists():
+            # Everything before this directory is the import root.
+            import_root = candidate.parent
+            module_name = ".".join(parts[i:])
+            return import_root, module_name
+
+    # No package directory found — use the parent directory as root
+    # and just the filename as the module name (original behaviour).
+    return path.parent, parts[-1]
