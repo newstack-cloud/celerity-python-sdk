@@ -102,3 +102,32 @@ def detect_cloud_deploy_target() -> str:
     Defaults to ``"aws"`` when not set.
     """
     return os.environ.get("CELERITY_DEPLOY_TARGET", "aws")
+
+
+@dataclass(frozen=True, slots=True)
+class AwsCredentials:
+    """Explicit AWS credentials that override the default credential chain."""
+
+    access_key_id: str
+    secret_access_key: str
+
+
+def capture_aws_credentials(
+    access_key_env: str = "AWS_ACCESS_KEY_ID",
+    secret_key_env: str = "AWS_SECRET_ACCESS_KEY",
+) -> AwsCredentials | None:
+    """Capture AWS credentials from environment variables.
+
+    Args:
+        access_key_env: Primary env var for the access key.
+        secret_key_env: Primary env var for the secret key.
+
+    Returns:
+        ``AwsCredentials`` if both values are present, otherwise ``None``
+        (falling back to the default credential chain).
+    """
+    access_key = os.environ.get(access_key_env) or os.environ.get("AWS_ACCESS_KEY_ID")
+    secret_key = os.environ.get(secret_key_env) or os.environ.get("AWS_SECRET_ACCESS_KEY")
+    if access_key and secret_key:
+        return AwsCredentials(access_key_id=access_key, secret_access_key=secret_key)
+    return None
