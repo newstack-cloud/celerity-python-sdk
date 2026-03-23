@@ -93,6 +93,7 @@ def map_runtime_websocket_message(py_msg: RuntimeWebSocketMsg) -> WebSocketMessa
             client_ip=rc.client_ip,
             query=flatten_multi_value_record(rc.query or {}),
             cookies=rc.cookies or {},
+            auth=getattr(rc, "auth", None),
             trace_context=rc.trace_context,
         )
 
