@@ -53,4 +53,9 @@ class ServiceContainer(ABC):
     def has(self, token: InjectionToken) -> bool: ...
 
     @abstractmethod
+    def add_resolve_hook(self, hook: Callable[[Any, ServiceContainer], bool]) -> None:
+        """Register a hook called when a token has no provider."""
+        ...
+
+    @abstractmethod
     async def close_all(self) -> None: ...
