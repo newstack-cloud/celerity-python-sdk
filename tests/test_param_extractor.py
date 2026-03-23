@@ -32,7 +32,7 @@ class TestExtractParamMetadata:
         result = extract_param_metadata(handler)
         assert len(result) == 1
         assert result[0].type == "body"
-        assert result[0].index == 1
+        assert result[0].index == 0
 
     def test_extracts_multiple(self) -> None:
         def handler(

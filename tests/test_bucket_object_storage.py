@@ -86,7 +86,8 @@ class TestS3ObjectStorage:
         storage = S3ObjectStorage(session=session, config=config)
         await storage._ensure_client()
         call_kwargs = session.client.call_args
-        assert "config" in call_kwargs.kwargs
+        boto_config = call_kwargs.kwargs["config"]
+        assert boto_config.s3["addressing_style"] == "path"
 
     @pytest.mark.asyncio
     async def test_no_path_style(self, session: MagicMock) -> None:
@@ -98,4 +99,5 @@ class TestS3ObjectStorage:
         storage = S3ObjectStorage(session=session, config=config)
         await storage._ensure_client()
         call_kwargs = session.client.call_args
-        assert "config" not in call_kwargs.kwargs
+        boto_config = call_kwargs.kwargs["config"]
+        assert boto_config.s3 is None

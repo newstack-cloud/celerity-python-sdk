@@ -26,6 +26,9 @@ class _MockContainer:
     def get(self, token: str) -> Any:
         return self._values.get(token)
 
+    def add_resolve_hook(self, hook: Any) -> None:
+        pass
+
 
 class TestConfigLayer:
     async def test_registers_config_service(

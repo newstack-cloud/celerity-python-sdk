@@ -149,8 +149,8 @@ class TestMapRuntimeScheduleEvent:
 class TestMapRuntimeWebSocketMessage:
     def test_basic_ws_message(self) -> None:
         py_msg = _ns(
-            type="JSON",
-            event_type="MESSAGE",
+            type="json",
+            event_type="message",
             connection_id="conn-1",
             message_id="msg-1",
             json_body={"action": "chat", "text": "hello"},

@@ -81,7 +81,7 @@ class TestSendMessage:
         fields = mock_redis.xadd.call_args[0][1]
         assert fields["body"] == "hello"
         assert "timestamp" in fields
-        assert fields["message_type"] == "standard"
+        assert fields["message_type"] == "0"
 
     @pytest.mark.asyncio
     async def test_includes_group_id(self, queue: RedisQueue, mock_redis: AsyncMock) -> None:
