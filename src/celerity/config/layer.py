@@ -7,12 +7,15 @@ import os
 from typing import TYPE_CHECKING, Any
 
 from celerity.config.backends.empty import EmptyConfigBackend
+from celerity.config.params import config_namespace_token
 from celerity.config.service import (
     CONFIG_SERVICE_TOKEN,
     ConfigService,
     ConfigServiceImpl,
 )
+from celerity.di.dependency_tokens import pending_parsed_configs
 from celerity.resources._common import detect_platform, detect_runtime_mode
+from celerity.types.container import FactoryProvider
 from celerity.types.layer import CelerityLayer
 
 if TYPE_CHECKING:
@@ -76,8 +79,12 @@ class ConfigLayer(CelerityLayer):
                     continue
                 prefix_len = len("CELERITY_CONFIG_")
                 suffix_len = len("_STORE_ID")
-                ns_name = key[prefix_len:-suffix_len].lower()
-                kind_key = f"CELERITY_CONFIG_{ns_name.upper()}_STORE_KIND"
+                env_key = key[prefix_len:-suffix_len]
+                # Use the _NAMESPACE env var if set (preserves original casing
+                # like "appConfig"), otherwise fall back to lowercased env key.
+                ns_env_key = f"CELERITY_CONFIG_{env_key}_NAMESPACE"
+                ns_name = os.environ.get(ns_env_key, env_key.lower())
+                kind_key = f"CELERITY_CONFIG_{env_key}_STORE_KIND"
                 ns_kind = os.environ.get(kind_key, store_kind)
                 ns_backend = _resolve_backend(platform, ns_kind, runtime_mode)
                 ns_data = await ns_backend.fetch(value)
@@ -87,11 +94,45 @@ class ConfigLayer(CelerityLayer):
         container.register_value(CONFIG_SERVICE_TOKEN, config_service)
 
         # Register each namespace under its own DI token for handler injection.
-        from celerity.config.params import config_namespace_token
-
         for ns_name in config_service.namespace_names:
             registered_ns = config_service.namespace(ns_name)
             container.register_value(config_namespace_token(ns_name), registered_ns)
+
+        # Register a resolve hook for parsed config models.
+        # The parsed config tokens (e.g. celerity:config:appConfig:parsed:AppConfig)
+        # are discovered lazily when the container first constructs a class that
+        # uses Annotated[Model, ConfigParam(...)]. At that point pending_parsed_configs
+        # has been populated, so the hook registers the factory just-in-time.
+        container.add_resolve_hook(_parsed_config_resolve_hook)
+
+
+def _parsed_config_resolve_hook(token: Any, container: Any) -> bool:
+    """Just-in-time factory registration for parsed config tokens.
+
+    Called by the container when a token has no provider. If the token
+    matches a pending parsed config entry, registers a FactoryProvider
+    and returns ``True`` so the container retries resolution.
+    """
+    if not isinstance(token, str) or ":parsed:" not in token:
+        return False
+
+    for ns_token, model_type in pending_parsed_configs:
+        parsed_token = f"{ns_token}:parsed:{model_type.__qualname__}"
+        if parsed_token != token:
+            continue
+
+        async def _factory(ns: Any, model: type = model_type) -> Any:
+            data = await ns.get_all()
+            return model.model_validate(data)
+
+        container.register(
+            parsed_token,
+            FactoryProvider(use_factory=_factory, inject=[ns_token]),
+        )
+        logger.debug("config: registered parsed model %s for %s", model_type.__name__, ns_token)
+        return True
+
+    return False
 
 
 def _resolve_backend(

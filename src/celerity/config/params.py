@@ -20,26 +20,37 @@ def config_namespace_token(name: str) -> str:
 
 
 class ConfigParam:
-    """DI marker for config namespace injection.
+    """DI marker for config namespace or typed config injection.
 
     Used inside ``Annotated[...]`` to tell the DI resolver which
-    config namespace to inject.
+    config namespace to inject. When the annotated type is a Pydantic
+    ``BaseModel`` (or any class with ``model_validate``), the namespace
+    is automatically parsed into a validated instance of that type.
 
     Usage::
 
         from typing import Annotated
+        from pydantic import BaseModel
         from celerity.config import ConfigParam, ConfigNamespace
 
-        # Default config namespace:
-        ConfigResource = Annotated[ConfigNamespace, ConfigParam()]
+        # Raw namespace access:
+        AppConfigNs = Annotated[ConfigNamespace, ConfigParam("appConfig")]
 
-        # Named config namespace:
-        AppConfig = Annotated[ConfigNamespace, ConfigParam("appConfig")]
+        # Typed config — automatically parsed from the namespace:
+        class AppConfig(BaseModel):
+            APP_NAME: str
+            LOG_LEVEL: str = "info"
+            MAX_PAGE_SIZE: int = 50
 
         @injectable()
         class SettingsService:
-            def __init__(self, config: AppConfig) -> None:
-                self.config = config  # type checker: ConfigNamespace
+            def __init__(
+                self,
+                raw: Annotated[ConfigNamespace, ConfigParam("appConfig")],
+                typed: Annotated[AppConfig, ConfigParam("appConfig")],
+            ) -> None:
+                self.raw = raw        # ConfigNamespace
+                self.typed = typed    # AppConfig (validated)
     """
 
     resource_type: str = "config"
