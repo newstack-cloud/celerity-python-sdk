@@ -148,8 +148,9 @@ def _register_consumer_handlers(
 
     for consumer in app_config.consumers.consumers:
         for defn in consumer.handlers:
-            method_name = defn.handler.rsplit(".", 1)[-1] if "." in defn.handler else defn.name
-            lookup_key = f"{consumer.consumer_name}::{method_name}"
+            source = consumer.consumer_name
+            route = getattr(defn, "route", None) or ""
+            lookup_key = f"{source}:{route}" if route else source
             callback = result.create_consumer_callback(lookup_key, defn.name)
             if callback:
                 app.register_consumer_handler(defn.name, callback, defn.timeout)
@@ -166,8 +167,9 @@ def _register_event_handlers(
 
     for event in app_config.events.events:
         for defn in event.handlers:
-            method_name = defn.handler.rsplit(".", 1)[-1] if "." in defn.handler else defn.name
-            lookup_key = f"{event.consumer_name}::{method_name}"
+            source = event.consumer_name
+            route = getattr(defn, "route", None) or ""
+            lookup_key = f"{source}:{route}" if route else source
             callback = result.create_consumer_callback(lookup_key, defn.name)
             if callback:
                 app.register_consumer_handler(defn.name, callback, defn.timeout)
@@ -184,8 +186,13 @@ def _register_schedule_handlers(
 
     for schedule in app_config.schedules.schedules:
         for defn in schedule.handlers:
-            method_name = defn.handler.rsplit(".", 1)[-1] if "." in defn.handler else defn.name
-            lookup_key = f"{schedule.schedule_id}::{method_name}"
+            source = schedule.schedule_id
+            schedule_expr = schedule.schedule_value or ""
+            lookup_key = (
+                source
+                or schedule_expr
+                or (defn.handler.rsplit(".", 1)[-1] if "." in defn.handler else defn.name)
+            )
             callback = result.create_schedule_callback(lookup_key, defn.name)
             if callback:
                 app.register_schedule_handler(defn.name, callback, defn.timeout)
