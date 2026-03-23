@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.4.0](https://github.com/newstack-cloud/celerity-python-sdk/compare/v0.3.0...v0.4.0) (2026-03-23)
+
+
+### Features
+
+* add helper to capture aws credentials for celerity resource aws backends ([dfc520d](https://github.com/newstack-cloud/celerity-python-sdk/commit/dfc520dfbda26cadea7791a0a4b28bd8b4d7fcd2))
+* add helper to support typed message bodies when publishing messages ([56ad215](https://github.com/newstack-cloud/celerity-python-sdk/commit/56ad215cbba5ef6e34f2808f2675183fae7bde10))
+* add resolve hooks to allow for lazily resolving deps like typed config ([65a4a06](https://github.com/newstack-cloud/celerity-python-sdk/commit/65a4a06c1807c8987953acff703d60d8536493d2))
+* add support for new credentials extraction for s3 and dynamo backends ([57800f2](https://github.com/newstack-cloud/celerity-python-sdk/commit/57800f2016d87041512e8755d7a96cdcbb661328))
+* enhance config resource to support typed extraction ([7df0e54](https://github.com/newstack-cloud/celerity-python-sdk/commit/7df0e5467d7e41411c6963900e2d1038264215c0))
+* update service container interface to support adding resolve hooks ([a16be4c](https://github.com/newstack-cloud/celerity-python-sdk/commit/a16be4c1cc697520c2d9bae1c26748f9ad8b5c1b))
+
+
+### Bug Fixes
+
+* add fix to correctly extract websocket message body ([25ebec5](https://github.com/newstack-cloud/celerity-python-sdk/commit/25ebec5d90725b22bafb284dbb98d5ad6a2c4d3a))
+* add fixes for event-based handler routing ([2009a8d](https://github.com/newstack-cloud/celerity-python-sdk/commit/2009a8d70612aa4058b7d962bedd0363cf0d3410))
+* add fixes for module resolution ([ba208d6](https://github.com/newstack-cloud/celerity-python-sdk/commit/ba208d61099d9f46e2e0d4dab1d8eca43d3ffdf5))
+* add missing auth context for websocket message mapping ([161d3f3](https://github.com/newstack-cloud/celerity-python-sdk/commit/161d3f34b86c0673f215f9364a17277c8144b3e6))
+* add typed message body support and fixes to physical resource id resolution ([7fc335f](https://github.com/newstack-cloud/celerity-python-sdk/commit/7fc335f336e1d3c172f63652d71388a0e63b05ef))
+* correct method name used for guards ([41519a3](https://github.com/newstack-cloud/celerity-python-sdk/commit/41519a3e9517e9059d75319c52224f8b5094c55c))
+* ensure handlers are resolved lazily for dynamic di ([7771f28](https://github.com/newstack-cloud/celerity-python-sdk/commit/7771f283187d594ae222aa7f0e707d20c23b31c5))
+* improve and standardise api consumer validation messages ([da5e953](https://github.com/newstack-cloud/celerity-python-sdk/commit/da5e9532315e4a8c0f291e5e45ddd00e22a3e918))
+
+
+### Dependencies
+
+* bump celerity-runtime-sdk to 0.2.1 ([08ef748](https://github.com/newstack-cloud/celerity-python-sdk/commit/08ef748c911198c1bd60417865f8fda73393c756))
+
 ## [0.3.0](https://github.com/newstack-cloud/celerity-python-sdk/compare/v0.2.1...v0.3.0) (2026-03-21)
 
 
