@@ -43,7 +43,7 @@ def load_blueprint_resources(
         if not isinstance(resource, dict) or "type" not in resource:
             continue
         spec = resource.get("spec") or {}
-        physical_name = spec.get("name", resource_id)
+        physical_name = str(spec.get("name", resource_id))
         resources[resource_id] = BlueprintResource(
             resource_id=resource_id,
             type=resource["type"],
