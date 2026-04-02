@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/newstack-cloud/celerity-python-sdk/compare/v0.4.0...v0.5.0) (2026-04-02)
+
+
+### Features
+
+* add testing helpers for unit, integration and api tests ([042538c](https://github.com/newstack-cloud/celerity-python-sdk/commit/042538cfdb323bfd2a0599a4f638c0b0eedc2f96))
+
+
+### Bug Fixes
+
+* remove hardcoded fallback db connection string for test sql client ([784cf01](https://github.com/newstack-cloud/celerity-python-sdk/commit/784cf01dba1c51a933624cf397faf6c47cfda78d))
+
 ## [0.4.0](https://github.com/newstack-cloud/celerity-python-sdk/compare/v0.3.0...v0.4.0) (2026-03-23)
 
 
