@@ -178,10 +178,10 @@ async def _create_sql_handles(
     handles: dict[str, Any],
     closeables: list[Any],
 ) -> None:
-    conn_str = os.environ.get(
-        "CELERITY_LOCAL_SQL_DATABASE_ENDPOINT",
-        "postgresql+asyncpg://celerity:celerity@localhost:5432/celerity",
-    )
+    conn_str = os.environ.get("CELERITY_LOCAL_SQL_DATABASE_ENDPOINT")
+    if not conn_str:
+        msg = "CELERITY_LOCAL_SQL_DATABASE_ENDPOINT must be set for SQL integration tests"
+        raise RuntimeError(msg)
 
     from celerity.resources.sql_database.config import (
         RUNTIME_POOL,
@@ -204,7 +204,7 @@ async def _create_sql_handles(
     host = parsed.hostname or "localhost"
     port = parsed.port or default_port
     user = parsed.username or "celerity"
-    password = parsed.password or "celerity"
+    password = parsed.password or ""
 
     # Group by resource name so writer/reader for the same resource share an instance.
     by_resource: dict[str, list[ResourceTokenInfo]] = {}
