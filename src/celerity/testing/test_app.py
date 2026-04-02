@@ -85,8 +85,6 @@ class TestApp:
         )
         return cls(container, registry, system_layers)
 
-    # -- HTTP injection --
-
     async def http_get(self, path: str, **kwargs: Any) -> HttpResponse:
         """Inject a GET request."""
         return await self._inject_http("GET", path, **kwargs)
@@ -122,8 +120,6 @@ class TestApp:
         """Inject a DELETE request."""
         return await self._inject_http("DELETE", path, **kwargs)
 
-    # -- WebSocket injection --
-
     async def inject_websocket(
         self,
         route: str,
@@ -143,8 +139,6 @@ class TestApp:
             msg = f"No WebSocket handler for route: {route}"
             raise ValueError(msg)
         await execute_websocket_pipeline(handler, message, self._pipeline_options())
-
-    # -- Consumer injection --
 
     async def inject_consumer(
         self,
@@ -169,8 +163,6 @@ class TestApp:
             raise ValueError(msg)
         return await execute_consumer_pipeline(handler, event, self._pipeline_options())
 
-    # -- Schedule injection --
-
     async def inject_schedule(
         self,
         handler_tag: str,
@@ -194,8 +186,6 @@ class TestApp:
             raise ValueError(msg)
         return await execute_schedule_pipeline(handler, event, self._pipeline_options())
 
-    # -- Custom handler injection --
-
     async def inject_custom(self, name: str, payload: Any = None) -> Any:
         """Invoke a custom handler by name.
 
@@ -215,8 +205,6 @@ class TestApp:
             raise ValueError(msg)
         return await execute_custom_pipeline(handler, payload, self._pipeline_options())
 
-    # -- Lifecycle --
-
     async def close(self) -> None:
         """Shut down the test app and release resources."""
         await self.container.close_all()
@@ -228,8 +216,6 @@ class TestApp:
     def get_registry(self) -> HandlerRegistry:
         """Get the handler registry."""
         return self.registry
-
-    # -- Private --
 
     def _pipeline_options(self) -> dict[str, Any]:
         return {

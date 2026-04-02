@@ -28,52 +28,52 @@ from celerity.resources.sql_database import (
 class TestSqlWriterParam:
     def test_default_marker(self) -> None:
         param = SqlWriterParam()
-        assert param.resource_type == "sql:writer"
+        assert param.resource_type == "sqlDatabase:writer"
         assert param.resource_name is None
 
     def test_named_marker(self) -> None:
         param = SqlWriterParam("mydb")
-        assert param.resource_type == "sql:writer"
+        assert param.resource_type == "sqlDatabase:writer"
         assert param.resource_name == "mydb"
 
     def test_resolve_default_token(self) -> None:
         token = resolve_marker_token(SqlWriterParam())
-        assert token == "celerity:sql:writer:default"
+        assert token == "celerity:sqlDatabase:writer:default"
 
     def test_resolve_named_token(self) -> None:
         token = resolve_marker_token(SqlWriterParam("mydb"))
-        assert token == "celerity:sql:writer:mydb"
+        assert token == "celerity:sqlDatabase:writer:mydb"
 
 
 class TestSqlReaderParam:
     def test_default_marker(self) -> None:
         param = SqlReaderParam()
-        assert param.resource_type == "sql:reader"
+        assert param.resource_type == "sqlDatabase:reader"
         assert param.resource_name is None
 
     def test_named_marker(self) -> None:
         param = SqlReaderParam("mydb")
-        assert param.resource_type == "sql:reader"
+        assert param.resource_type == "sqlDatabase:reader"
         assert param.resource_name == "mydb"
 
     def test_resolve_default_token(self) -> None:
         token = resolve_marker_token(SqlReaderParam())
-        assert token == "celerity:sql:reader:default"
+        assert token == "celerity:sqlDatabase:reader:default"
 
     def test_resolve_named_token(self) -> None:
         token = resolve_marker_token(SqlReaderParam("mydb"))
-        assert token == "celerity:sql:reader:mydb"
+        assert token == "celerity:sqlDatabase:reader:mydb"
 
 
 class TestSqlDatabaseParam:
     def test_default_marker(self) -> None:
         param = SqlDatabaseParam()
-        assert param.resource_type == "sql:writer"
+        assert param.resource_type == "sqlDatabase:writer"
         assert param.resource_name is None
 
     def test_named_marker(self) -> None:
         param = SqlDatabaseParam("mydb")
-        assert param.resource_type == "sql:writer"
+        assert param.resource_type == "sqlDatabase:writer"
         assert param.resource_name == "mydb"
 
     def test_same_resource_type_as_writer(self) -> None:
@@ -81,48 +81,48 @@ class TestSqlDatabaseParam:
 
     def test_resolve_default_token(self) -> None:
         token = resolve_marker_token(SqlDatabaseParam())
-        assert token == "celerity:sql:writer:default"
+        assert token == "celerity:sqlDatabase:writer:default"
 
     def test_resolve_named_token(self) -> None:
         token = resolve_marker_token(SqlDatabaseParam("mydb"))
-        assert token == "celerity:sql:writer:mydb"
+        assert token == "celerity:sqlDatabase:writer:mydb"
 
 
 class TestSqlCredentialsMarker:
     def test_default_marker(self) -> None:
         param = SqlCredentialsMarker()
-        assert param.resource_type == "sql:credentials"
+        assert param.resource_type == "sqlDatabase:credentials"
         assert param.resource_name is None
 
     def test_named_marker(self) -> None:
         param = SqlCredentialsMarker("mydb")
-        assert param.resource_type == "sql:credentials"
+        assert param.resource_type == "sqlDatabase:credentials"
         assert param.resource_name == "mydb"
 
 
 class TestTokenFactories:
     def test_writer_token(self) -> None:
-        assert sql_writer_token("mydb") == "celerity:sql:writer:mydb"
+        assert sql_writer_token("mydb") == "celerity:sqlDatabase:writer:mydb"
 
     def test_reader_token(self) -> None:
-        assert sql_reader_token("mydb") == "celerity:sql:reader:mydb"
+        assert sql_reader_token("mydb") == "celerity:sqlDatabase:reader:mydb"
 
     def test_credentials_token(self) -> None:
-        assert sql_credentials_token("mydb") == "celerity:sql:credentials:mydb"
+        assert sql_credentials_token("mydb") == "celerity:sqlDatabase:credentials:mydb"
 
     def test_instance_token(self) -> None:
-        assert sql_instance_token("mydb") == "celerity:sql:instance:mydb"
+        assert sql_instance_token("mydb") == "celerity:sqlDatabase:instance:mydb"
 
 
 class TestDefaultTokenConstants:
     def test_writer(self) -> None:
-        assert DEFAULT_SQL_WRITER_TOKEN == "celerity:sql:writer:default"
+        assert DEFAULT_SQL_WRITER_TOKEN == "celerity:sqlDatabase:writer:default"
 
     def test_reader(self) -> None:
-        assert DEFAULT_SQL_READER_TOKEN == "celerity:sql:reader:default"
+        assert DEFAULT_SQL_READER_TOKEN == "celerity:sqlDatabase:reader:default"
 
     def test_credentials(self) -> None:
-        assert DEFAULT_SQL_CREDENTIALS_TOKEN == "celerity:sql:credentials:default"
+        assert DEFAULT_SQL_CREDENTIALS_TOKEN == "celerity:sqlDatabase:credentials:default"
 
 
 class TestAnnotatedAliases:

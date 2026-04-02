@@ -132,15 +132,15 @@ class TestSqlDatabaseLayerSingleResource:
         await layer.handle(FakeContext(container), next_handler)
 
         # Per-resource tokens
-        assert await container.resolve("celerity:sql:instance:orders-db") is mock_instance
-        assert await container.resolve("celerity:sql:writer:orders-db") is mock_writer
-        assert await container.resolve("celerity:sql:reader:orders-db") is mock_reader
-        assert "celerity:sql:credentials:orders-db" in container._registry
+        assert await container.resolve("celerity:sqlDatabase:instance:orders-db") is mock_instance
+        assert await container.resolve("celerity:sqlDatabase:writer:orders-db") is mock_writer
+        assert await container.resolve("celerity:sqlDatabase:reader:orders-db") is mock_reader
+        assert "celerity:sqlDatabase:credentials:orders-db" in container._registry
 
         # Default tokens (single resource)
-        assert await container.resolve("celerity:sql:writer:default") is mock_writer
-        assert await container.resolve("celerity:sql:reader:default") is mock_reader
-        assert "celerity:sql:credentials:default" in container._registry
+        assert await container.resolve("celerity:sqlDatabase:writer:default") is mock_writer
+        assert await container.resolve("celerity:sqlDatabase:reader:default") is mock_reader
+        assert "celerity:sqlDatabase:credentials:default" in container._registry
 
     @pytest.mark.asyncio
     @patch("celerity.resources.sql_database.layer.create_sql_database")
@@ -216,12 +216,12 @@ class TestSqlDatabaseLayerMultipleResources:
         await layer.handle(FakeContext(container), next_handler)
 
         # Named tokens registered
-        assert "celerity:sql:writer:orders-db" in container._registry
-        assert "celerity:sql:writer:users-db" in container._registry
+        assert "celerity:sqlDatabase:writer:orders-db" in container._registry
+        assert "celerity:sqlDatabase:writer:users-db" in container._registry
         # No default token
-        assert "celerity:sql:writer:default" not in container._registry
-        assert "celerity:sql:reader:default" not in container._registry
-        assert "celerity:sql:credentials:default" not in container._registry
+        assert "celerity:sqlDatabase:writer:default" not in container._registry
+        assert "celerity:sqlDatabase:reader:default" not in container._registry
+        assert "celerity:sqlDatabase:credentials:default" not in container._registry
 
 
 class TestSqlDatabaseLayerDispose:

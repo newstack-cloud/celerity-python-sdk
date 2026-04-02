@@ -24,7 +24,7 @@ class TestGetSqlDatabase:
 
         class Container:
             async def resolve(self, token: str) -> object:
-                assert token == "celerity:sql:writer:default"
+                assert token == "celerity:sqlDatabase:writer:default"
                 return sentinel
 
         result = await get_sql_database(Container(), None)  # type: ignore[arg-type]
@@ -36,7 +36,7 @@ class TestGetSqlDatabase:
 
         class Container:
             async def resolve(self, token: str) -> object:
-                assert token == "celerity:sql:writer:mydb"
+                assert token == "celerity:sqlDatabase:writer:mydb"
                 return sentinel
 
         result = await get_sql_database(Container(), "mydb")  # type: ignore[arg-type]
@@ -50,7 +50,7 @@ class TestGetSqlWriter:
 
         class Container:
             async def resolve(self, token: str) -> object:
-                assert token == "celerity:sql:writer:default"
+                assert token == "celerity:sqlDatabase:writer:default"
                 return sentinel
 
         result = await get_sql_writer(Container(), None)  # type: ignore[arg-type]
@@ -62,7 +62,7 @@ class TestGetSqlWriter:
 
         class Container:
             async def resolve(self, token: str) -> object:
-                assert token == "celerity:sql:writer:mydb"
+                assert token == "celerity:sqlDatabase:writer:mydb"
                 return sentinel
 
         result = await get_sql_writer(Container(), "mydb")  # type: ignore[arg-type]
@@ -76,7 +76,7 @@ class TestGetSqlReader:
 
         class Container:
             async def resolve(self, token: str) -> object:
-                assert token == "celerity:sql:reader:default"
+                assert token == "celerity:sqlDatabase:reader:default"
                 return sentinel
 
         result = await get_sql_reader(Container(), None)  # type: ignore[arg-type]
@@ -88,7 +88,7 @@ class TestGetSqlReader:
 
         class Container:
             async def resolve(self, token: str) -> object:
-                assert token == "celerity:sql:reader:mydb"
+                assert token == "celerity:sqlDatabase:reader:mydb"
                 return sentinel
 
         result = await get_sql_reader(Container(), "mydb")  # type: ignore[arg-type]
@@ -102,7 +102,7 @@ class TestGetSqlCredentials:
 
         class Container:
             async def resolve(self, token: str) -> object:
-                assert token == "celerity:sql:credentials:default"
+                assert token == "celerity:sqlDatabase:credentials:default"
                 return sentinel
 
         result = await get_sql_credentials(Container(), None)  # type: ignore[arg-type]
@@ -114,7 +114,7 @@ class TestGetSqlCredentials:
 
         class Container:
             async def resolve(self, token: str) -> object:
-                assert token == "celerity:sql:credentials:mydb"
+                assert token == "celerity:sqlDatabase:credentials:mydb"
                 return sentinel
 
         result = await get_sql_credentials(Container(), "mydb")  # type: ignore[arg-type]

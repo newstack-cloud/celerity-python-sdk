@@ -19,7 +19,7 @@ class SqlWriterParam:
     SQL writer engine to inject.
     """
 
-    resource_type: str = "sql:writer"
+    resource_type: str = "sqlDatabase:writer"
 
     def __init__(self, name: str | None = None) -> None:
         self.resource_name = name
@@ -32,7 +32,7 @@ class SqlReaderParam:
     SQL reader engine to inject.
     """
 
-    resource_type: str = "sql:reader"
+    resource_type: str = "sqlDatabase:reader"
 
     def __init__(self, name: str | None = None) -> None:
         self.resource_name = name
@@ -45,7 +45,7 @@ class SqlDatabaseParam:
     deploying applications that don't need separate reader/writer engines.
     """
 
-    resource_type: str = "sql:writer"
+    resource_type: str = "sqlDatabase:writer"
 
     def __init__(self, name: str | None = None) -> None:
         self.resource_name = name
@@ -58,7 +58,7 @@ class SqlCredentialsMarker:
     SQL credentials to inject.
     """
 
-    resource_type: str = "sql:credentials"
+    resource_type: str = "sqlDatabase:credentials"
 
     def __init__(self, name: str | None = None) -> None:
         self.resource_name = name
@@ -66,29 +66,29 @@ class SqlCredentialsMarker:
 
 # --- Token factories ---
 
-DEFAULT_SQL_WRITER_TOKEN = "celerity:sql:writer:default"
-DEFAULT_SQL_READER_TOKEN = "celerity:sql:reader:default"
-DEFAULT_SQL_CREDENTIALS_TOKEN = "celerity:sql:credentials:default"
+DEFAULT_SQL_WRITER_TOKEN = "celerity:sqlDatabase:writer:default"
+DEFAULT_SQL_READER_TOKEN = "celerity:sqlDatabase:reader:default"
+DEFAULT_SQL_CREDENTIALS_TOKEN = "celerity:sqlDatabase:credentials:default"
 
 
 def sql_writer_token(resource_name: str) -> str:
     """Create a DI token for a named SQL writer resource."""
-    return f"celerity:sql:writer:{resource_name}"
+    return f"celerity:sqlDatabase:writer:{resource_name}"
 
 
 def sql_reader_token(resource_name: str) -> str:
     """Create a DI token for a named SQL reader resource."""
-    return f"celerity:sql:reader:{resource_name}"
+    return f"celerity:sqlDatabase:reader:{resource_name}"
 
 
 def sql_credentials_token(resource_name: str) -> str:
     """Create a DI token for named SQL credentials."""
-    return f"celerity:sql:credentials:{resource_name}"
+    return f"celerity:sqlDatabase:credentials:{resource_name}"
 
 
 def sql_instance_token(resource_name: str) -> str:
     """Create a DI token for a named SQL database instance."""
-    return f"celerity:sql:instance:{resource_name}"
+    return f"celerity:sqlDatabase:instance:{resource_name}"
 
 
 # --- Type-safe aliases (what developers import and use) ---
