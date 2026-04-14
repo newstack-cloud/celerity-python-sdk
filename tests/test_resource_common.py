@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-import json
+from typing import TYPE_CHECKING, Any
 
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 from celerity.resources._common import (
     ResourceLink,
@@ -26,30 +30,49 @@ from celerity.resources._tokens import (
 
 
 class TestCaptureResourceLinks:
-    def test_parses_valid_json(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        links_json = json.dumps(
+    def test_parses_valid_json(self, resource_links_file: Callable[[dict[str, Any]], Path]) -> None:
+        resource_links_file(
             {
                 "orders-db": {"type": "datastore", "configKey": "ordersDb"},
                 "app-cache": {"type": "cache", "configKey": "appCache"},
             }
         )
-        monkeypatch.setenv("CELERITY_RESOURCE_LINKS", links_json)
         links = capture_resource_links()
 
         assert len(links) == 2
         assert links["orders-db"] == ResourceLink(type="datastore", config_key="ordersDb")
         assert links["app-cache"] == ResourceLink(type="cache", config_key="appCache")
 
-    def test_empty_env_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("CELERITY_RESOURCE_LINKS", raising=False)
+    def test_empty_file_returns_empty(
+        self, resource_links_file: Callable[[dict[str, Any]], Path]
+    ) -> None:
+        resource_links_file({})
         assert capture_resource_links() == {}
 
-    def test_invalid_json_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("CELERITY_RESOURCE_LINKS", "not-json")
-        assert capture_resource_links() == {}
+    def test_missing_file_raises(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("CELERITY_RESOURCE_LINKS_PATH", str(tmp_path / "does-not-exist.json"))
+        with pytest.raises(FileNotFoundError, match="resource links file not found"):
+            capture_resource_links()
 
-    def test_skips_malformed_entries(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        links_json = json.dumps(
+    def test_invalid_json_raises(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        path = tmp_path / "__celerity_resource_links__.json"
+        path.write_text("not-json", encoding="utf-8")
+        monkeypatch.setenv("CELERITY_RESOURCE_LINKS_PATH", str(path))
+        with pytest.raises(ValueError, match="not valid JSON"):
+            capture_resource_links()
+
+    def test_skips_malformed_entries(
+        self, resource_links_file: Callable[[dict[str, Any]], Path]
+    ) -> None:
+        resource_links_file(
             {
                 "good": {"type": "cache", "configKey": "cacheKey"},
                 "bad-missing-type": {"configKey": "x"},
@@ -57,7 +80,6 @@ class TestCaptureResourceLinks:
                 "bad-not-dict": "string",
             }
         )
-        monkeypatch.setenv("CELERITY_RESOURCE_LINKS", links_json)
         links = capture_resource_links()
         assert len(links) == 1
         assert "good" in links

@@ -22,7 +22,7 @@ logger = logging.getLogger("celerity.queue")
 class QueueLayer(CelerityLayer):
     """System layer for queue resources.
 
-    Reads ``CELERITY_RESOURCE_LINKS``, creates a shared
+    Reads the Celerity CLI-generated resource links file, creates a shared
     ``QueueClient``, resolves per-resource queue URLs from
     the config service, and registers ``Queue`` handles in the
     DI container.

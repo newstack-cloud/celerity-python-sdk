@@ -25,7 +25,7 @@ def create_default_system_layers() -> list[Any]:
 
     1. TelemetryLayer (optional -- if ``celerity-sdk[telemetry]`` installed)
     2. ConfigLayer (always -- resource layers depend on it)
-    3. Resource layers (driven by ``CELERITY_RESOURCE_LINKS``)
+    3. Resource layers (driven by the Celerity CLI-generated resource links file)
 
     Resource layers are loaded dynamically: only packages for resource
     types present in the links are imported. If a resource package is
@@ -51,7 +51,7 @@ def create_default_system_layers() -> list[Any]:
     layers.append(ConfigLayer())
     logger.debug("Loaded ConfigLayer")
 
-    # 3. Resource layers (driven by CELERITY_RESOURCE_LINKS)
+    # 3. Resource layers (driven by the Celerity CLI-generated resource links file)
     from celerity.resources._common import capture_resource_links, get_resource_types
 
     links = capture_resource_links()

@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-import json
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 import pytest
 
@@ -53,8 +57,10 @@ def _mock_create_client() -> AsyncMock:
 
 class TestDatastoreLayer:
     @pytest.mark.asyncio
-    async def test_no_op_without_links(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("CELERITY_RESOURCE_LINKS", raising=False)
+    async def test_no_op_without_links(
+        self, resource_links_file: Callable[[dict[str, Any]], Path]
+    ) -> None:
+        resource_links_file({})
         layer = DatastoreLayer()
         container = _make_container()
         ctx = _make_context(container)
@@ -70,16 +76,13 @@ class TestDatastoreLayer:
     async def test_registers_single_resource_with_default(
         self,
         mock_factory: AsyncMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_client = AsyncMock()
         mock_client.datastore.return_value = MagicMock()
         mock_factory.return_value = mock_client
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps({"orders-db": {"type": "datastore", "configKey": "ordersDb"}}),
-        )
+        resource_links_file({"orders-db": {"type": "datastore", "configKey": "ordersDb"}})
 
         layer = DatastoreLayer()
         container = _make_container()
@@ -97,20 +100,17 @@ class TestDatastoreLayer:
     async def test_no_default_for_multiple_resources(
         self,
         mock_factory: AsyncMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_client = AsyncMock()
         mock_client.datastore.return_value = MagicMock()
         mock_factory.return_value = mock_client
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps(
-                {
-                    "db-1": {"type": "datastore", "configKey": "db1"},
-                    "db-2": {"type": "datastore", "configKey": "db2"},
-                }
-            ),
+        resource_links_file(
+            {
+                "db-1": {"type": "datastore", "configKey": "db1"},
+                "db-2": {"type": "datastore", "configKey": "db2"},
+            }
         )
 
         layer = DatastoreLayer()
@@ -130,16 +130,13 @@ class TestDatastoreLayer:
     async def test_idempotent(
         self,
         mock_factory: AsyncMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_client = AsyncMock()
         mock_client.datastore.return_value = MagicMock()
         mock_factory.return_value = mock_client
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps({"db": {"type": "datastore", "configKey": "db"}}),
-        )
+        resource_links_file({"db": {"type": "datastore", "configKey": "db"}})
 
         layer = DatastoreLayer()
         container = _make_container()
@@ -153,8 +150,10 @@ class TestDatastoreLayer:
         assert container.register_value.call_count == call_count
 
     @pytest.mark.asyncio
-    async def test_passes_through_to_next(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("CELERITY_RESOURCE_LINKS", raising=False)
+    async def test_passes_through_to_next(
+        self, resource_links_file: Callable[[dict[str, Any]], Path]
+    ) -> None:
+        resource_links_file({})
         layer = DatastoreLayer()
         container = _make_container()
         ctx = _make_context(container)
@@ -168,17 +167,14 @@ class TestDatastoreLayer:
     async def test_dispose_closes_clients(
         self,
         mock_factory: AsyncMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_client = AsyncMock()
         mock_client.datastore.return_value = MagicMock()
         mock_client.close = AsyncMock()
         mock_factory.return_value = mock_client
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps({"db": {"type": "datastore", "configKey": "db"}}),
-        )
+        resource_links_file({"db": {"type": "datastore", "configKey": "db"}})
 
         layer = DatastoreLayer()
         container = _make_container()

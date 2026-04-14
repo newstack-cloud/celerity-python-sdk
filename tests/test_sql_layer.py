@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-import json
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 import pytest
 
@@ -57,26 +61,31 @@ def container() -> FakeContainer:
 
 
 @pytest.fixture
-def single_sql_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    links = {"orders-db": {"type": "sqlDatabase", "configKey": "ordersDb"}}
-    monkeypatch.setenv("CELERITY_RESOURCE_LINKS", json.dumps(links))
+def single_sql_env(
+    resource_links_file: Callable[[dict[str, Any]], Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resource_links_file({"orders-db": {"type": "sqlDatabase", "configKey": "ordersDb"}})
     monkeypatch.delenv("CELERITY_RUNTIME", raising=False)
 
 
 @pytest.fixture
-def multi_sql_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    links = {
-        "orders-db": {"type": "sqlDatabase", "configKey": "ordersDb"},
-        "users-db": {"type": "sqlDatabase", "configKey": "usersDb"},
-    }
-    monkeypatch.setenv("CELERITY_RESOURCE_LINKS", json.dumps(links))
+def multi_sql_env(
+    resource_links_file: Callable[[dict[str, Any]], Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resource_links_file(
+        {
+            "orders-db": {"type": "sqlDatabase", "configKey": "ordersDb"},
+            "users-db": {"type": "sqlDatabase", "configKey": "usersDb"},
+        }
+    )
     monkeypatch.delenv("CELERITY_RUNTIME", raising=False)
 
 
 @pytest.fixture
-def no_sql_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    links = {"app-cache": {"type": "cache", "configKey": "appCache"}}
-    monkeypatch.setenv("CELERITY_RESOURCE_LINKS", json.dumps(links))
+def no_sql_env(resource_links_file: Callable[[dict[str, Any]], Path]) -> None:
+    resource_links_file({"app-cache": {"type": "cache", "configKey": "appCache"}})
 
 
 class TestSqlDatabaseLayerNoLinks:

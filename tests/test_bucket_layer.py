@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-import json
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 import pytest
 
@@ -48,8 +52,10 @@ def _make_config_service(id_map: dict[str, str]) -> MagicMock:
 
 class TestObjectStorageLayer:
     @pytest.mark.asyncio
-    async def test_no_op_without_links(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("CELERITY_RESOURCE_LINKS", raising=False)
+    async def test_no_op_without_links(
+        self, resource_links_file: Callable[[dict[str, Any]], Path]
+    ) -> None:
+        resource_links_file({})
         layer = ObjectStorageLayer()
         container = _make_container()
         ctx = _make_context(container)
@@ -65,7 +71,7 @@ class TestObjectStorageLayer:
     async def test_registers_single_resource_with_default(
         self,
         mock_factory: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_storage = MagicMock()
         mock_bucket_handle = MagicMock()
@@ -75,10 +81,7 @@ class TestObjectStorageLayer:
 
         config_service = _make_config_service({"myBucket": "actual-bucket-name"})
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps({"my-bucket": {"type": "bucket", "configKey": "myBucket"}}),
-        )
+        resource_links_file({"my-bucket": {"type": "bucket", "configKey": "myBucket"}})
 
         layer = ObjectStorageLayer()
         container = _make_container()
@@ -97,7 +100,7 @@ class TestObjectStorageLayer:
     async def test_no_default_for_multiple_resources(
         self,
         mock_factory: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_storage = MagicMock()
         mock_storage.bucket.return_value = MagicMock()
@@ -106,14 +109,11 @@ class TestObjectStorageLayer:
 
         config_service = _make_config_service({"images": "images-bucket", "docs": "docs-bucket"})
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps(
-                {
-                    "images": {"type": "bucket", "configKey": "images"},
-                    "docs": {"type": "bucket", "configKey": "docs"},
-                }
-            ),
+        resource_links_file(
+            {
+                "images": {"type": "bucket", "configKey": "images"},
+                "docs": {"type": "bucket", "configKey": "docs"},
+            }
         )
 
         layer = ObjectStorageLayer()
@@ -134,7 +134,7 @@ class TestObjectStorageLayer:
     async def test_idempotent(
         self,
         mock_factory: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_storage = MagicMock()
         mock_storage.bucket.return_value = MagicMock()
@@ -143,10 +143,7 @@ class TestObjectStorageLayer:
 
         config_service = _make_config_service({"b": "test-bucket"})
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps({"bucket": {"type": "bucket", "configKey": "b"}}),
-        )
+        resource_links_file({"bucket": {"type": "bucket", "configKey": "b"}})
 
         layer = ObjectStorageLayer()
         container = _make_container()
@@ -161,8 +158,10 @@ class TestObjectStorageLayer:
         assert container.register_value.call_count == call_count
 
     @pytest.mark.asyncio
-    async def test_passes_through_to_next(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("CELERITY_RESOURCE_LINKS", raising=False)
+    async def test_passes_through_to_next(
+        self, resource_links_file: Callable[[dict[str, Any]], Path]
+    ) -> None:
+        resource_links_file({})
         layer = ObjectStorageLayer()
         container = _make_container()
         ctx = _make_context(container)
@@ -176,7 +175,7 @@ class TestObjectStorageLayer:
     async def test_dispose_closes_storages(
         self,
         mock_factory: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_storage = MagicMock()
         mock_storage.bucket.return_value = MagicMock()
@@ -185,10 +184,7 @@ class TestObjectStorageLayer:
 
         config_service = _make_config_service({"b": "test-bucket"})
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps({"bucket": {"type": "bucket", "configKey": "b"}}),
-        )
+        resource_links_file({"bucket": {"type": "bucket", "configKey": "b"}})
 
         layer = ObjectStorageLayer()
         container = _make_container()

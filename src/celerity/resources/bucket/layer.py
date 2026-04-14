@@ -22,7 +22,7 @@ logger = logging.getLogger("celerity.bucket")
 class ObjectStorageLayer(CelerityLayer):
     """System layer for bucket resources.
 
-    Reads ``CELERITY_RESOURCE_LINKS``, creates ``ObjectStorage``
+    Reads the Celerity CLI-generated resource links file, creates ``ObjectStorage``
     instances, and registers per-bucket ``Bucket`` handles in the
     DI container.
     """

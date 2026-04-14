@@ -22,7 +22,7 @@ logger = logging.getLogger("celerity.datastore")
 class DatastoreLayer(CelerityLayer):
     """System layer for datastore resources.
 
-    Reads ``CELERITY_RESOURCE_LINKS``, creates a shared
+    Reads the Celerity CLI-generated resource links file, creates a shared
     ``DatastoreClient``, resolves per-resource table names from
     the config service, and registers ``Datastore`` handles in the
     DI container.

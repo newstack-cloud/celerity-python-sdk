@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-import json
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 import pytest
 
@@ -48,8 +52,10 @@ def _make_config_service(url_map: dict[str, str]) -> MagicMock:
 
 class TestQueueLayer:
     @pytest.mark.asyncio
-    async def test_no_op_without_links(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("CELERITY_RESOURCE_LINKS", raising=False)
+    async def test_no_op_without_links(
+        self, resource_links_file: Callable[[dict[str, Any]], Path]
+    ) -> None:
+        resource_links_file({})
         layer = QueueLayer()
         container = _make_container()
         ctx = _make_context(container)
@@ -65,7 +71,7 @@ class TestQueueLayer:
     async def test_registers_single_resource_with_default(
         self,
         mock_factory: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_client = MagicMock()
         mock_queue_handle = MagicMock()
@@ -75,10 +81,7 @@ class TestQueueLayer:
 
         config_service = _make_config_service({"myQueue": "https://sqs/my-queue"})
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps({"my-queue": {"type": "queue", "configKey": "myQueue"}}),
-        )
+        resource_links_file({"my-queue": {"type": "queue", "configKey": "myQueue"}})
 
         layer = QueueLayer()
         container = _make_container()
@@ -97,7 +100,7 @@ class TestQueueLayer:
     async def test_no_default_for_multiple_resources(
         self,
         mock_factory: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_client = MagicMock()
         mock_client.queue.return_value = MagicMock()
@@ -108,14 +111,11 @@ class TestQueueLayer:
             {"ordersQ": "https://sqs/orders", "notifQ": "https://sqs/notif"}
         )
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps(
-                {
-                    "orders": {"type": "queue", "configKey": "ordersQ"},
-                    "notifications": {"type": "queue", "configKey": "notifQ"},
-                }
-            ),
+        resource_links_file(
+            {
+                "orders": {"type": "queue", "configKey": "ordersQ"},
+                "notifications": {"type": "queue", "configKey": "notifQ"},
+            }
         )
 
         layer = QueueLayer()
@@ -136,7 +136,7 @@ class TestQueueLayer:
     async def test_idempotent(
         self,
         mock_factory: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_client = MagicMock()
         mock_client.queue.return_value = MagicMock()
@@ -145,10 +145,7 @@ class TestQueueLayer:
 
         config_service = _make_config_service({"q": "https://sqs/q"})
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps({"queue": {"type": "queue", "configKey": "q"}}),
-        )
+        resource_links_file({"queue": {"type": "queue", "configKey": "q"}})
 
         layer = QueueLayer()
         container = _make_container()
@@ -163,8 +160,10 @@ class TestQueueLayer:
         assert container.register_value.call_count == call_count
 
     @pytest.mark.asyncio
-    async def test_passes_through_to_next(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("CELERITY_RESOURCE_LINKS", raising=False)
+    async def test_passes_through_to_next(
+        self, resource_links_file: Callable[[dict[str, Any]], Path]
+    ) -> None:
+        resource_links_file({})
         layer = QueueLayer()
         container = _make_container()
         ctx = _make_context(container)
@@ -178,7 +177,7 @@ class TestQueueLayer:
     async def test_dispose_closes_client(
         self,
         mock_factory: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_client = MagicMock()
         mock_client.queue.return_value = MagicMock()
@@ -187,10 +186,7 @@ class TestQueueLayer:
 
         config_service = _make_config_service({"q": "https://sqs/q"})
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps({"queue": {"type": "queue", "configKey": "q"}}),
-        )
+        resource_links_file({"queue": {"type": "queue", "configKey": "q"}})
 
         layer = QueueLayer()
         container = _make_container()

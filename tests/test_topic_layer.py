@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-import json
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 import pytest
 
@@ -48,8 +52,10 @@ def _make_config_service(id_map: dict[str, str]) -> MagicMock:
 
 class TestTopicLayer:
     @pytest.mark.asyncio
-    async def test_no_op_without_links(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("CELERITY_RESOURCE_LINKS", raising=False)
+    async def test_no_op_without_links(
+        self, resource_links_file: Callable[[dict[str, Any]], Path]
+    ) -> None:
+        resource_links_file({})
         layer = TopicLayer()
         container = _make_container()
         ctx = _make_context(container)
@@ -65,7 +71,7 @@ class TestTopicLayer:
     async def test_registers_single_resource_with_default(
         self,
         mock_factory: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_client = MagicMock()
         mock_client.topic.return_value = MagicMock()
@@ -74,10 +80,7 @@ class TestTopicLayer:
 
         config_service = _make_config_service({"myTopic": "arn:aws:sns:us-east-1:123:my-topic"})
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps({"my-topic": {"type": "topic", "configKey": "myTopic"}}),
-        )
+        resource_links_file({"my-topic": {"type": "topic", "configKey": "myTopic"}})
 
         layer = TopicLayer()
         container = _make_container()
@@ -96,7 +99,7 @@ class TestTopicLayer:
     async def test_no_default_for_multiple_resources(
         self,
         mock_factory: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_client = MagicMock()
         mock_client.topic.return_value = MagicMock()
@@ -107,14 +110,11 @@ class TestTopicLayer:
             {"ordersT": "arn:aws:sns:us-east-1:123:orders", "notifT": "arn:sns:notif"}
         )
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps(
-                {
-                    "orders": {"type": "topic", "configKey": "ordersT"},
-                    "notifications": {"type": "topic", "configKey": "notifT"},
-                }
-            ),
+        resource_links_file(
+            {
+                "orders": {"type": "topic", "configKey": "ordersT"},
+                "notifications": {"type": "topic", "configKey": "notifT"},
+            }
         )
 
         layer = TopicLayer()
@@ -135,7 +135,7 @@ class TestTopicLayer:
     async def test_idempotent(
         self,
         mock_factory: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_client = MagicMock()
         mock_client.topic.return_value = MagicMock()
@@ -144,10 +144,7 @@ class TestTopicLayer:
 
         config_service = _make_config_service({"t": "arn:sns:t"})
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps({"topic": {"type": "topic", "configKey": "t"}}),
-        )
+        resource_links_file({"topic": {"type": "topic", "configKey": "t"}})
 
         layer = TopicLayer()
         container = _make_container()
@@ -162,8 +159,10 @@ class TestTopicLayer:
         assert container.register_value.call_count == call_count
 
     @pytest.mark.asyncio
-    async def test_passes_through_to_next(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("CELERITY_RESOURCE_LINKS", raising=False)
+    async def test_passes_through_to_next(
+        self, resource_links_file: Callable[[dict[str, Any]], Path]
+    ) -> None:
+        resource_links_file({})
         layer = TopicLayer()
         container = _make_container()
         ctx = _make_context(container)
@@ -177,7 +176,7 @@ class TestTopicLayer:
     async def test_dispose_closes_client(
         self,
         mock_factory: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
+        resource_links_file: Callable[[dict[str, Any]], Path],
     ) -> None:
         mock_client = MagicMock()
         mock_client.topic.return_value = MagicMock()
@@ -186,10 +185,7 @@ class TestTopicLayer:
 
         config_service = _make_config_service({"t": "arn:sns:t"})
 
-        monkeypatch.setenv(
-            "CELERITY_RESOURCE_LINKS",
-            json.dumps({"topic": {"type": "topic", "configKey": "t"}}),
-        )
+        resource_links_file({"topic": {"type": "topic", "configKey": "t"}})
 
         layer = TopicLayer()
         container = _make_container()

@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-import json
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 import pytest
 
@@ -51,36 +55,37 @@ class FakeContext:
         self.container = container
 
 
-def _make_env(cache_links: dict[str, dict[str, str]]) -> dict[str, str]:
-    return {"CELERITY_RESOURCE_LINKS": json.dumps(cache_links)}
-
-
 @pytest.fixture
 def container() -> FakeContainer:
     return FakeContainer()
 
 
 @pytest.fixture
-def single_cache_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    links = {"app-cache": {"type": "cache", "configKey": "appCache"}}
-    monkeypatch.setenv("CELERITY_RESOURCE_LINKS", json.dumps(links))
+def single_cache_env(
+    resource_links_file: Callable[[dict[str, Any]], Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resource_links_file({"app-cache": {"type": "cache", "configKey": "appCache"}})
     monkeypatch.delenv("CELERITY_RUNTIME", raising=False)
 
 
 @pytest.fixture
-def multi_cache_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    links = {
-        "session": {"type": "cache", "configKey": "sessionCache"},
-        "data": {"type": "cache", "configKey": "dataCache"},
-    }
-    monkeypatch.setenv("CELERITY_RESOURCE_LINKS", json.dumps(links))
+def multi_cache_env(
+    resource_links_file: Callable[[dict[str, Any]], Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resource_links_file(
+        {
+            "session": {"type": "cache", "configKey": "sessionCache"},
+            "data": {"type": "cache", "configKey": "dataCache"},
+        }
+    )
     monkeypatch.delenv("CELERITY_RUNTIME", raising=False)
 
 
 @pytest.fixture
-def no_cache_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    links = {"orders-db": {"type": "datastore", "configKey": "ordersDb"}}
-    monkeypatch.setenv("CELERITY_RESOURCE_LINKS", json.dumps(links))
+def no_cache_env(resource_links_file: Callable[[dict[str, Any]], Path]) -> None:
+    resource_links_file({"orders-db": {"type": "datastore", "configKey": "ordersDb"}})
 
 
 class TestCacheLayerNoCacheLinks:

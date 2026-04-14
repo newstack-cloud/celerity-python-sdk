@@ -22,7 +22,7 @@ logger = logging.getLogger("celerity.topic")
 class TopicLayer(CelerityLayer):
     """System layer for topic resources.
 
-    Reads ``CELERITY_RESOURCE_LINKS``, creates a shared
+    Reads the Celerity CLI-generated resource links file, creates a shared
     ``TopicClient``, resolves per-resource physical IDs from
     the config service, and registers ``Topic`` handles in the
     DI container.
