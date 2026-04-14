@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/newstack-cloud/celerity-python-sdk/compare/v0.5.0...v0.5.1) (2026-04-14)
+
+
+### Bug Fixes
+
+* update resource links to be sourced from cli generated file ([a517027](https://github.com/newstack-cloud/celerity-python-sdk/commit/a5170277b879d3d3b0d0323c0daddc3c4480e460))
+
 ## [0.5.0](https://github.com/newstack-cloud/celerity-python-sdk/compare/v0.4.0...v0.5.0) (2026-04-02)
 
 
