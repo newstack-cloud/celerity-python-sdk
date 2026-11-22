@@ -49,5 +49,4 @@ htmlcov/
 node_modules/
 yarn-error.log
 
-CLAUDE.md
 .claude
