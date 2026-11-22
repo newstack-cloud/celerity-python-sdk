@@ -33,7 +33,8 @@ git config core.hooksPath .githooks
 # Run all tests (unit + integration)
 ./scripts/run-tests.sh all
 
-# Run linting and type checking
+# Run formatting, linting and type checking
+uv run ruff format --check src/ tests/
 uv run ruff check src/ tests/
 uv run mypy src/
 ```
@@ -51,7 +52,7 @@ uv run ruff check --fix src/ tests/
 uv run mypy src/
 
 # Run a specific test file
-uv run pytest tests/test_types.py
+uv run pytest tests/test_metadata.py
 
 # Run tests matching a keyword
 uv run pytest -k "test_metadata"
@@ -63,11 +64,12 @@ uv run pytest -k "test_metadata"
 # Add a runtime dependency
 uv add httpx
 
-# Add a dev dependency
-uv add --dev pytest-mock
+# Add a dev dependency to the dev extra (uv add --dev writes a dependency
+# group, which uv sync --extra dev doesn't install)
+uv add --optional dev pytest-mock
 
-# Add a dependency to an extra group
-# (edit pyproject.toml [project.optional-dependencies] directly)
+# Add a dependency to another extra group
+uv add --optional aws some-package
 
 # Sync after editing pyproject.toml
 uv sync --extra dev --extra runtime --extra aws --extra cache
@@ -98,6 +100,7 @@ test(bootstrap): add module graph integration tests
 src/celerity/          SDK source code (src layout)
 ├── types/             Shared data types and ABCs
 ├── common/            Shared utilities
+├── config/            Configuration resolution and backends
 ├── metadata/          Metadata storage primitives
 ├── decorators/        Handler and parameter decorators
 ├── di/                Dependency injection container
@@ -114,7 +117,6 @@ src/celerity/          SDK source code (src layout)
 tests/                 Test suite
 tests/integration/     Integration tests (require Docker services)
 scripts/               Build and test scripts
-docs/design/           Phase-by-phase design documents
 ```
 
 ## Testing
