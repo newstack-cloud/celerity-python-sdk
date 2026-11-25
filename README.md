@@ -5,7 +5,7 @@
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=newstack-cloud_celerity-python-sdk&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=newstack-cloud_celerity-python-sdk)
 [![PyPI - Version](https://img.shields.io/pypi/v/celerity-sdk)](https://pypi.org/project/celerity-sdk/)
 
-The official Python SDK for building applications with [Celerity](https://celerityframework.io).
+The official Python SDK for building applications with [Celerity](https://celerity.dev).
 
 ## Installation
 
